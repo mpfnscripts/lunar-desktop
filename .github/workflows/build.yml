@@ -1,0 +1,78 @@
+name: Build Lunar Desktop
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows host + SteamVR driver
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S pc -B build -G "Visual Studio 17 2022" -A x64
+      - name: Build
+        run: cmake --build build --config Release --parallel
+      - name: Package
+        shell: pwsh
+        run: |
+          $out = "build/LunarDesktop"
+          Copy-Item README.md "$out/README.md"
+          Copy-Item assets/fonts/LICENSE-Inter.txt "$out/LICENSE-Inter.txt"
+          Copy-Item pc/third_party/openvr/LICENSE "$out/LICENSE-OpenVR.txt"
+          Get-ChildItem -Recurse $out | Select-Object FullName, Length
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LunarDesktop-Windows
+          path: build/LunarDesktop
+
+  quest:
+    name: Quest app (APK)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - name: Build APK
+        working-directory: quest
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease
+      - name: Collect APK
+        run: |
+          mkdir -p out
+          cp quest/app/build/outputs/apk/release/app-release.apk out/LunarDesktop-Quest.apk
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LunarDesktop-Quest
+          path: out/LunarDesktop-Quest.apk
+
+  release:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, quest]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dl
+      - name: Zip Windows build
+        run: |
+          cd dl/LunarDesktop-Windows && zip -r ../../LunarDesktop-Windows.zip . && cd ../..
+          cp dl/LunarDesktop-Quest/LunarDesktop-Quest.apk .
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            LunarDesktop-Windows.zip
+            LunarDesktop-Quest.apk
