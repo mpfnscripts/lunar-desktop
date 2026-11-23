@@ -187,7 +187,7 @@ bool VrFrameSource::Init(LunarIpc *ipc) {
     HRESULT hr = dev->QueryInterface(__uuidof(ID3D11Device1), (void **)&m_dev);
     dev->Release();
     if (FAILED(hr)) return false;
-    m_lastSeq = ipc->frameSeq;
+    m_lastSeq = 0;  // pick up the newest frame straight away
     return OpenTextures();
 }
 
@@ -231,7 +231,15 @@ void VrFrameSource::Shutdown() {
 bool VrFrameSource::Acquire(int timeoutMs, ID3D11Texture2D **tex, LunarIpcFrameInfo *info) {
     if (!m_dev) return false;
     if (m_ipc->frameSeq == m_lastSeq) {
-        if (WaitForSingleObject(m_event, timeoutMs) != WAIT_OBJECT_0 && m_ipc->frameSeq == m_lastSeq) return false;
+        if (WaitForSingleObject(m_event, timeoutMs) != WAIT_OBJECT_0 && m_ipc->frameSeq == m_lastSeq) {
+            // No new frame: free every slot in case they were all filled while we weren't reading.
+            for (int i = 0; i < LUNAR_IPC_FRAME_SLOTS; i++) {
+                if (!m_mutex[i]) continue;
+                HRESULT r = m_mutex[i]->AcquireSync(LUNAR_KEY_HOST, 0);
+                if (r == S_OK || r == (HRESULT)WAIT_ABANDONED) m_mutex[i]->ReleaseSync(LUNAR_KEY_DRIVER);
+            }
+            return false;
+        }
     }
     if (m_ipc->frameTexGeneration != m_gen && !OpenTextures()) return false;
     if (!m_tex[0]) return false;
@@ -244,6 +252,12 @@ bool VrFrameSource::Acquire(int timeoutMs, ID3D11Texture2D **tex, LunarIpcFrameI
     if (hr != S_OK && hr != (HRESULT)WAIT_ABANDONED) return false;
     m_locked = slot;
     *tex = m_tex[slot];
+    // Hand any older, unread slots back to the driver so it never runs out of free slots.
+    for (int i = 0; i < LUNAR_IPC_FRAME_SLOTS; i++) {
+        if (i == slot || !m_mutex[i]) continue;
+        HRESULT r = m_mutex[i]->AcquireSync(LUNAR_KEY_HOST, 0);
+        if (r == S_OK || r == (HRESULT)WAIT_ABANDONED) m_mutex[i]->ReleaseSync(LUNAR_KEY_DRIVER);
+    }
     return true;
 }
 

@@ -462,9 +462,10 @@ void LunarCompositor::Present(vr::SharedTextureHandle_t syncTexture) {
         info.trackingTimeUs = m_ipc->tracking.clientTimeUs;
         info.headPose = PoseFromMatrix(layers[0].eye[0].mHmdPose);
         lunarSeqWrite(&m_ipc->frameSeq, &m_ipc->latestFrame, info);
-        InterlockedIncrement((volatile LONG *)&m_ipc->vrFrameCount);
         if (m_frameEvent) SetEvent(m_frameEvent);
     }
+    // Count every present (even when no slot was free) so the host can tell a VR app is running.
+    InterlockedIncrement((volatile LONG *)&m_ipc->vrFrameCount);
 
     if (syncMutex) {
         syncMutex->ReleaseSync(0);
