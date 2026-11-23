@@ -83,6 +83,7 @@ private:
     bool m_chaperoneDone = false;
     int64_t m_driverSeenUs = 0;
     uint32_t m_hapticRead = 0;
+    std::string m_streamKey;
 };
 
 extern App g_app;

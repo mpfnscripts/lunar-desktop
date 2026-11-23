@@ -102,7 +102,13 @@ void App::OnSettingsChanged() {
             WriteDisplayConfig();
         }
     }
-    m_restart = true;
+    // Only restart the video stream when something that affects it changed.
+    char key[160];
+    snprintf(key, sizeof(key), "%d|%s|%d|%d|%d|%d", s.quality, s.codec.c_str(), s.refresh, s.desktopFps, s.desktopMaxWidth, s.monitor);
+    if (m_streamKey != key) {
+        m_streamKey = key;
+        m_restart = true;
+    }
     SendHostState();
 }
 
