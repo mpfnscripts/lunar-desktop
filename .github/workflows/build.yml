@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Configure
-        run: cmake -S pc -B build -G "Visual Studio 17 2022" -A x64
+        run: cmake -S pc -B build -A x64
       - name: Build
         run: cmake --build build --config Release --parallel
       - name: Package
@@ -42,10 +42,10 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - uses: android-actions/setup-android@v3
       - name: Build APK
         working-directory: quest
         run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
           chmod +x gradlew
           ./gradlew --no-daemon assembleRelease
       - name: Collect APK
