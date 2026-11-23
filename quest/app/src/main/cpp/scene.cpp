@@ -51,8 +51,8 @@ in vec3 vNormal; in vec2 vUV; out vec4 o;
 void main(){
   vec3 n=normalize(vNormal);
   vec3 tex=texture(uTex,vec2(vUV.x+uSpin,vUV.y)).rgb;
-  float diff=clamp(dot(n,uLight)*0.85+0.2,0.0,1.0);
-  vec3 c=tex*uTint*diff*1.25;
+  float diff=clamp(dot(n,uLight)*0.8+0.32,0.0,1.0);
+  vec3 c=tex*uTint*diff*1.9;
   o=vec4(c,1.0);
 })";
 
@@ -67,7 +67,7 @@ uniform sampler2D uTex; uniform vec3 uColor; uniform float uAlpha; uniform int u
 in vec2 vUV; out vec4 o;
 void main(){
   float a;
-  if(uMode==0){ a=texture(uTex,vUV).a; }
+  if(uMode==0){ float d=length(vUV-0.5)*2.0; a=pow(clamp(1.0-d,0.0,1.0),2.6); }
   else {
     vec2 p=(vUV-0.5)*2.0*(uSize+vec2(uRadius*2.0));
     vec2 q=abs(p)-uSize+uRadius; float d=length(max(q,0.0))+min(max(q.x,q.y),0.0)-uRadius;
@@ -253,8 +253,8 @@ void Scene::drawEnvironment(float time, bool ground, bool bigMoon, bool stars, f
         glUniform1i(glGetUniformLocation(m_glowProg, "uTex"), 0);
         glUniform1i(glGetUniformLocation(m_glowProg, "uMode"), 0);
         U3(m_glowProg, "uColor", Lin(t.accent));
-        U1(m_glowProg, "uAlpha", 0.55f * fade);
-        UM(m_glowProg, "uMVP", m_vp * Billboard(mp - kMoonDir * 0.5f, m_cam, 20.f, 20.f));
+        U1(m_glowProg, "uAlpha", 0.45f * fade);
+        UM(m_glowProg, "uMVP", m_vp * Billboard(mp - kMoonDir * 0.5f, m_cam, 26.f, 26.f));
         m_quad.draw();
         // the moon itself
         glDisable(GL_BLEND);

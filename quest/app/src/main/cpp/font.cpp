@@ -22,7 +22,7 @@ uint32_t NextCodepoint(const char *&s) {
 }
 
 bool FontAtlas::load(AAssetManager *am) {
-    const char *files[FONT_COUNT] = {"fonts/Inter-Regular.otf", "fonts/Inter-SemiBold.otf", "fonts/Inter-Light.otf"};
+    const char *files[FONT_COUNT] = {"fonts/Inter-Regular.ttf", "fonts/Inter-SemiBold.ttf", "fonts/Inter-Light.ttf"};
     std::vector<uint32_t> cps;
     for (uint32_t c = 32; c < 127; c++) cps.push_back(c);
     uint32_t extra[] = {0xB0, 0xB7, 0xD7, 0x2013, 0x2014, 0x2022, 0x2026, 0x2190, 0x2191, 0x2192, 0x2193, 0x2713, 0xE9};
