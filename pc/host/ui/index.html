@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lunar Desktop</title>
+<link rel="icon" href="/logo.png">
+<style>
+:root{
+  --accent:#b8c6ff; --accent-rgb:184,198,255; --accent2-rgb:96,84,190;
+  --bg:#0a0f26; --ink:#eef1fb; --blur:26px; --tint:1; --radius:26px;
+  --ink-soft:color-mix(in srgb,var(--ink) 68%,var(--bg));
+  --ink-faint:color-mix(in srgb,var(--ink) 44%,var(--bg));
+  --moon:#f4f6ff; --glow:var(--accent);
+  --glass:rgba(var(--accent-rgb),calc(.09*var(--tint)));
+  --glass-strong:rgba(var(--accent-rgb),calc(.16*var(--tint)));
+  --line:rgba(225,232,255,.16); --line-bright:rgba(240,244,255,.38);
+  --ok:#9ff0c0; --warn:#ffd9a8; --bad:#ff9a8f;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,sans-serif;color:var(--ink);
+  background:
+    radial-gradient(1100px 700px at 82% -8%, rgba(var(--accent-rgb),.20), transparent 62%),
+    radial-gradient(900px 600px at 6% 108%, rgba(var(--accent2-rgb),.22), transparent 60%),
+    linear-gradient(170deg,color-mix(in srgb,var(--bg) 72%,#000) 0%,var(--bg) 45%,color-mix(in srgb,var(--bg) 42%,#000) 100%);
+  overflow:hidden;-webkit-font-smoothing:antialiased;user-select:none;
+}
+#stars{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+.bigmoon{position:fixed;z-index:0;right:-130px;top:-150px;width:460px;height:460px;border-radius:50%;
+  background:
+    radial-gradient(circle at 34% 62%, rgba(120,132,180,.35) 0 7%, transparent 8%),
+    radial-gradient(circle at 58% 40%, rgba(120,132,180,.28) 0 10%, transparent 11%),
+    radial-gradient(circle at 44% 80%, rgba(120,132,180,.25) 0 5%, transparent 6%),
+    radial-gradient(circle at 36% 68%, #fbfcff 0%, color-mix(in srgb,var(--accent) 40%,#fff) 45%, color-mix(in srgb,var(--accent) 62%,#4c5478) 100%);
+  box-shadow:0 0 90px 30px rgba(var(--accent-rgb),.22),0 0 260px 110px rgba(var(--accent-rgb),.14);opacity:.5;filter:blur(.4px)}
+.app{position:relative;z-index:1;height:100%;display:grid;grid-template-rows:auto 1fr;gap:18px;padding:20px 24px 24px;grid-template-columns:minmax(0,1fr)}
+.glass{position:relative;
+  background:linear-gradient(160deg,var(--glass-strong),var(--glass) 38%,rgba(var(--accent-rgb),calc(.05*var(--tint))));
+  border:1px solid var(--line);border-radius:var(--radius);
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(150%);backdrop-filter:blur(var(--blur)) saturate(150%);
+  box-shadow:inset 0 1px 0 var(--line-bright),inset 0 -1px 0 rgba(0,0,0,.25),0 24px 60px -18px rgba(0,0,0,.65);overflow:hidden}
+.glass::before{content:"";position:absolute;left:0;right:0;top:0;height:46%;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,.03) 60%,transparent);
+  border-radius:var(--radius) var(--radius) 60% 60% / var(--radius) var(--radius) 18% 18%}
+header{display:flex;align-items:center;gap:14px;min-width:0}
+.logo{width:40px;height:40px;border-radius:50%;flex:none;position:relative;overflow:hidden;
+  background:radial-gradient(circle at 35% 30%,#fff,color-mix(in srgb,var(--accent) 40%,#fff) 45%,color-mix(in srgb,var(--accent) 62%,#4c5478));
+  box-shadow:0 0 22px rgba(var(--accent-rgb),.65),inset -9px -7px 14px rgba(40,50,100,.55)}
+.logo::after{content:"";position:absolute;width:40px;height:40px;border-radius:50%;left:13px;top:-7px;background:var(--bg);opacity:.92}
+.brand{font-size:21px;font-weight:300;letter-spacing:.42em;text-transform:uppercase;white-space:nowrap;overflow:hidden;
+  background:linear-gradient(180deg,#fff,color-mix(in srgb,var(--accent) 40%,#fff));-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand b{font-weight:600}
+.spacer{flex:1}
+.count{font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;padding:7px 14px;border-radius:16px;background:rgba(5,8,22,.45);border:1px solid var(--line);white-space:nowrap;display:flex;align-items:center;gap:8px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ink-faint);flex:none}
+.dot.on{background:var(--ok);box-shadow:0 0 10px var(--ok)}
+.dot.wait{background:var(--warn);box-shadow:0 0 10px var(--warn)}
+main{display:grid;grid-template-columns:minmax(300px,400px) 1fr;gap:18px;min-height:0}
+@media (max-width:860px){body{overflow:auto}.app{height:auto;min-height:100%}main{grid-template-columns:1fr}}
+
+/* headset panel */
+.now{display:flex;flex-direction:column;align-items:center;padding:24px 26px;min-height:0;overflow-y:auto}
+.stage{position:relative;width:min(300px,34vh);aspect-ratio:1;flex:none}
+#viz{position:absolute;inset:0;width:100%;height:100%}
+.disc{position:absolute;inset:19%;border-radius:50%;overflow:hidden;
+  background:
+    radial-gradient(circle at 30% 64%, rgba(110,124,175,.45) 0 8%, transparent 9%),
+    radial-gradient(circle at 62% 36%, rgba(110,124,175,.38) 0 12%, transparent 13%),
+    radial-gradient(circle at 54% 76%, rgba(110,124,175,.32) 0 6%, transparent 7%),
+    radial-gradient(circle at 36% 30%, #ffffff 0%, color-mix(in srgb,var(--accent) 40%,#fff) 42%, color-mix(in srgb,var(--accent) 62%,#4c5478) 100%);
+  box-shadow:0 0 0 1px rgba(255,255,255,.35),0 0 46px 6px rgba(var(--accent-rgb),.42),0 0 120px 30px rgba(var(--accent-rgb),.2),0 26px 50px -14px rgba(0,0,0,.8);transition:box-shadow .5s}
+body.live .disc{box-shadow:0 0 0 1px rgba(255,255,255,.45),0 0 60px 12px rgba(var(--accent-rgb),.55),0 0 150px 44px rgba(var(--accent-rgb),.26),0 26px 50px -14px rgba(0,0,0,.8)}
+.disc::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:radial-gradient(120% 80% at 30% 0%, rgba(255,255,255,.42), rgba(255,255,255,.06) 42%, transparent 55%),radial-gradient(circle at 50% 50%, transparent 62%, rgba(8,12,34,.42) 100%)}
+.disc .glyph{position:absolute;inset:0;display:grid;place-items:center;z-index:1}
+.disc .glyph svg{width:42%;height:42%;fill:none;stroke:rgba(20,26,60,.55);stroke-width:1.6}
+.title{margin-top:12px;font-size:26px;font-weight:600;text-align:center;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 0 26px rgba(var(--accent-rgb),.45)}
+.artist{margin-top:4px;font-size:14.5px;color:var(--ink-soft);letter-spacing:.06em;text-align:center;min-height:20px}
+.upnext{margin-top:3px;font-size:12px;color:var(--ink-faint);text-align:center;min-height:16px}
+.stats{margin-top:18px;width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{padding:10px 8px;border-radius:16px;background:rgba(5,8,22,.38);border:1px solid var(--line);text-align:center}
+.stat b{display:block;font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat span{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint)}
+.controls{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.pending{margin-top:16px;width:100%;padding:16px;border-radius:18px;border:1px solid var(--line-bright);
+  background:linear-gradient(170deg,rgba(var(--accent-rgb),.26),rgba(var(--accent-rgb),.08));box-shadow:0 0 30px rgba(var(--accent-rgb),.25);text-align:center}
+.pending b{display:block;font-size:16px;margin-bottom:4px}
+.pending p{font-size:12.5px;color:var(--ink-soft);margin-bottom:12px}
+
+/* buttons */
+.pill{height:36px;padding:0 16px;border-radius:18px;border:1px solid var(--line);cursor:pointer;color:var(--ink);font:inherit;font-size:13px;letter-spacing:.04em;
+  background:linear-gradient(170deg,rgba(var(--accent-rgb),.22),rgba(var(--accent-rgb),.06));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 8px 18px -8px rgba(0,0,0,.7);transition:transform .12s,box-shadow .2s;display:inline-flex;align-items:center;gap:8px}
+.pill:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 0 22px rgba(var(--accent-rgb),.35),0 8px 18px -8px rgba(0,0,0,.7)}
+.pill:active{transform:scale(.96)}
+.pill.primary{color:var(--bg);font-weight:600;border-color:rgba(255,255,255,.7);
+  background:radial-gradient(circle at 35% 26%,#fff 0%,color-mix(in srgb,var(--accent) 40%,#fff) 38%,color-mix(in srgb,var(--accent) 62%,#4c5478) 100%);
+  box-shadow:inset 0 2px 0 #fff,0 0 24px rgba(var(--accent-rgb),.55),0 10px 22px -10px rgba(0,0,0,.8)}
+.pill.danger{color:#ffb3a8}
+.pill.small{height:30px;padding:0 12px;font-size:12px}
+.pill:disabled{opacity:.45;cursor:default}
+
+/* settings panel */
+.side{display:flex;flex-direction:column;min-height:0}
+.tabs{display:flex;gap:6px;padding:18px 18px 10px;position:relative;flex-wrap:wrap}
+.tabs button{flex:1;min-width:84px;height:32px;border-radius:16px;border:1px solid transparent;background:none;color:var(--ink-soft);font:inherit;font-size:12.5px;letter-spacing:.08em;cursor:pointer}
+.tabs button:hover{color:var(--ink)}
+.tabs button.on{color:#fff;border-color:var(--line);background:linear-gradient(170deg,rgba(var(--accent-rgb),.34),rgba(var(--accent-rgb),.1));box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.pane{flex:1;overflow-y:auto;padding:4px 26px 24px;position:relative}
+.pane::-webkit-scrollbar{width:10px}
+.pane::-webkit-scrollbar-thumb{background:rgba(var(--accent-rgb),.18);border-radius:10px;border:3px solid transparent;background-clip:padding-box}
+section[data-tab]{display:none}
+section[data-tab].on{display:block}
+h3{font-size:11.5px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);margin:22px 0 10px}
+h3:first-child{margin-top:8px}
+.field{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--line)}
+.field:last-child{border-bottom:0}
+.field .lbl{flex:1;min-width:0}
+.field .lbl b{display:block;font-size:14px;font-weight:500}
+.field .lbl span{display:block;font-size:12px;color:var(--ink-faint);margin-top:2px;line-height:1.4}
+.seg{display:flex;gap:4px;padding:3px;border-radius:18px;background:rgba(5,8,22,.45);border:1px solid var(--line);flex-wrap:wrap}
+.seg button{height:28px;padding:0 12px;border-radius:14px;border:0;background:none;color:var(--ink-soft);font:inherit;font-size:12.5px;cursor:pointer}
+.seg button.on{color:#fff;background:linear-gradient(170deg,rgba(var(--accent-rgb),.4),rgba(var(--accent-rgb),.14));box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 0 12px rgba(var(--accent-rgb),.3)}
+select,input[type=text]{height:34px;border-radius:17px;padding:0 14px;background:rgba(5,8,22,.45);border:1px solid var(--line);color:var(--ink);font:inherit;font-size:13px;outline:0;max-width:280px;box-shadow:inset 0 2px 6px rgba(0,0,0,.45)}
+select option{background:var(--bg)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:200px;height:18px;background:none;cursor:pointer;--p:0%}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:6px;background:linear-gradient(90deg,#fff 0,var(--glow) var(--p),rgba(5,8,22,.6) var(--p));box-shadow:inset 0 1px 2px rgba(0,0,0,.6),0 0 0 1px var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;margin-top:-5px;
+  background:radial-gradient(circle at 35% 30%,#fff,color-mix(in srgb,var(--accent) 40%,#fff) 60%,color-mix(in srgb,var(--accent) 62%,#4c5478));box-shadow:0 0 12px rgba(var(--accent-rgb),.9),0 2px 5px rgba(0,0,0,.5)}
+.val{width:72px;text-align:right;font-size:12.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.sw{width:44px;height:24px;border-radius:12px;background:rgba(5,8,22,.6);border:1px solid var(--line);position:relative;cursor:pointer;flex:none;transition:background .2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;transition:left .2s;
+  background:radial-gradient(circle at 35% 30%,#fff,color-mix(in srgb,var(--accent) 40%,#fff) 60%,color-mix(in srgb,var(--accent) 62%,#4c5478));box-shadow:0 0 8px rgba(var(--accent-rgb),.6)}
+.sw.on{background:rgba(var(--accent-rgb),.55)}
+.sw.on::after{left:22px}
+.check{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.check i{width:22px;height:22px;border-radius:50%;flex:none;display:grid;place-items:center;font-style:normal;font-size:13px;font-weight:700}
+.check i.ok{background:rgba(159,240,192,.18);color:var(--ok);box-shadow:0 0 12px rgba(159,240,192,.3)}
+.check i.no{background:rgba(255,217,168,.16);color:var(--warn)}
+.check .lbl{flex:1}
+.check .lbl b{display:block;font-size:14px;font-weight:500}
+.check .lbl span{display:block;font-size:12px;color:var(--ink-faint);margin-top:2px;line-height:1.4}
+.themes{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.sw-theme{border-radius:16px;padding:10px;border:1px solid var(--line);cursor:pointer;text-align:center;font-size:12px;color:var(--ink-soft);background:rgba(5,8,22,.35)}
+.sw-theme.on{border-color:var(--accent);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.18);color:#fff}
+.sw-theme .ball{width:38px;height:38px;border-radius:50%;margin:2px auto 8px;position:relative}
+.colors{display:flex;gap:14px;flex-wrap:wrap}
+.colors label{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-faint);letter-spacing:.08em}
+input[type=color]{width:44px;height:30px;border:1px solid var(--line);border-radius:10px;background:none;cursor:pointer;padding:2px}
+.devices .dev{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.devices .dev .thumb{width:38px;height:38px;border-radius:12px;flex:none;background:radial-gradient(circle at 35% 30%,#f7f9ff,color-mix(in srgb,var(--accent) 40%,#fff) 50%,color-mix(in srgb,var(--accent) 62%,#4c5478));box-shadow:0 4px 12px rgba(0,0,0,.45)}
+.devices .dev div{flex:1;min-width:0}
+.devices .dev small{display:block;color:var(--ink-faint);font-size:11.5px;overflow:hidden;text-overflow:ellipsis}
+.log{margin-top:8px;padding:12px;border-radius:14px;background:rgba(5,8,22,.55);border:1px solid var(--line);font-family:Consolas,monospace;font-size:11.5px;line-height:1.5;color:var(--ink-soft);white-space:pre-wrap;max-height:260px;overflow-y:auto;user-select:text}
+.note{font-size:12.5px;line-height:1.55;color:var(--ink-soft);margin-top:6px}
+.note b{color:var(--ink)}
+.note code{padding:2px 7px;border-radius:7px;background:rgba(5,8,22,.5);border:1px solid var(--line);font-family:Consolas,monospace;font-size:12px;color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:26px;z-index:7;transform:translate(-50%,16px);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;
+  padding:9px 18px;border-radius:19px;font-size:13px;white-space:nowrap;border:1px solid var(--line-bright);background:color-mix(in srgb,var(--bg) 80%,rgb(var(--accent-rgb)));box-shadow:0 12px 30px -8px rgba(0,0,0,.8)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.hidden{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- Clunk Mode ---------- */
+.clunk-only{display:none}
+body.clunk{--ck-face:color-mix(in srgb,var(--accent) 12%,#2e3033);--ck-light:color-mix(in srgb,var(--accent) 10%,#383a3d);--ck-hover:color-mix(in srgb,var(--accent) 18%,#3c3f43);
+  --ck-press:color-mix(in srgb,var(--accent) 14%,#232528);--ck-field:color-mix(in srgb,var(--accent) 5%,#1b1c1e);--ck-sel:color-mix(in srgb,var(--accent2,#6054be) 78%,#151515);
+  --ck-bevel:#5f6368;--ck-edge:#4a4d52;--ck-text:#e4e4e4;--ck-text2:#b4b4b4;--ck-text3:#8a8a8a;
+  background:var(--ck-face);font-family:Tahoma,Verdana,sans-serif;font-size:12px;color:var(--ck-text)}
+body.clunk *{text-shadow:none!important;transition:none!important;animation:none!important;letter-spacing:0!important;border-radius:0!important}
+body.clunk #stars,body.clunk .bigmoon,body.clunk #viz,body.clunk .logo,body.clunk .glass::before,body.clunk .disc::after{display:none!important}
+body.clunk .clunk-only{display:flex}
+body.clunk .app{padding:0 8px 30px;gap:6px;grid-template-rows:auto auto minmax(0,1fr)}
+body.clunk .clunkbar{gap:16px;margin:0 -8px;padding:3px 8px;background:var(--ck-light);border-bottom:1px solid var(--ck-edge)}
+body.clunk .clunkbar span:first-letter{text-decoration:underline}
+body.clunk .clunkstatus{position:fixed;left:0;right:0;bottom:0;z-index:3;padding:3px 8px;background:var(--ck-face);border-top:2px groove var(--ck-bevel);font-family:"Courier New",monospace;font-size:12px}
+body.clunk header{display:none}
+body.clunk .glass{background:var(--ck-face);border:2px groove var(--ck-bevel);box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+body.clunk .disc{background:var(--ck-field);border:2px inset var(--ck-bevel);box-shadow:none;inset:8%}
+body.clunk .title{font-size:14px;font-weight:700;color:var(--ck-text)}
+body.clunk .artist,body.clunk .upnext{color:var(--ck-text2);font-size:11px}
+body.clunk .stat{background:var(--ck-field);border:2px inset var(--ck-bevel)}
+body.clunk .stat b{font-family:"Courier New",monospace;font-size:14px}
+body.clunk .pill,body.clunk .tabs button,body.clunk .seg button{background:var(--ck-face);color:var(--ck-text);border:2px outset var(--ck-bevel);box-shadow:none;font-family:Tahoma,sans-serif;font-size:12px;height:26px}
+body.clunk .pill:active,body.clunk .tabs button.on,body.clunk .seg button.on{border-style:inset;background:var(--ck-press)}
+body.clunk .seg{background:none;border:0}
+body.clunk select,body.clunk input[type=text]{background:var(--ck-field);border:2px inset var(--ck-bevel);box-shadow:none;color:var(--ck-text);height:24px}
+body.clunk h3{color:var(--ck-text);letter-spacing:0;text-transform:none;font-size:12px}
+body.clunk .field,body.clunk .check{border-bottom:1px solid var(--ck-edge)}
+body.clunk .field .lbl span,body.clunk .check .lbl span{color:var(--ck-text3)}
+body.clunk .sw{background:var(--ck-field);border:2px inset var(--ck-bevel)}
+body.clunk .sw::after{background:var(--ck-face);border:2px outset var(--ck-bevel);box-shadow:none;top:1px;width:16px;height:16px}
+body.clunk .sw.on{background:var(--ck-sel)}
+body.clunk .log{background:var(--ck-field);border:2px inset var(--ck-bevel);color:var(--ck-text)}
+body.clunk .pending{background:var(--ck-field);border:2px inset var(--ck-bevel);box-shadow:none}
+body.clunk .sw-theme{background:var(--ck-face);border:2px outset var(--ck-bevel)}
+body.clunk .sw-theme.on{border-style:inset;box-shadow:none}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<div class="bigmoon" id="bigmoon"></div>
+<div class="app">
+  <div class="clunk-only clunkbar"><span>File</span><span>Edit</span><span>Stream</span><span>Help</span></div>
+  <header>
+    <div class="logo"></div>
+    <div class="brand"><b>Lunar</b> Desktop</div>
+    <div class="spacer"></div>
+    <div class="count"><span class="dot" id="hdot"></span><span id="hstate">Waiting for headset</span></div>
+  </header>
+  <main>
+    <div class="glass now">
+      <div class="stage">
+        <canvas id="viz"></canvas>
+        <div class="disc"><div class="glyph" id="glyph"></div></div>
+      </div>
+      <div class="title" id="title">Lunar Desktop</div>
+      <div class="artist" id="artist">Open Lunar Desktop on your Quest</div>
+      <div class="upnext" id="upnext"></div>
+      <div class="pending hidden" id="pending">
+        <b id="pendName">Quest wants to connect</b>
+        <p>Only allow headsets you own. Once allowed, it can see and control this PC.</p>
+        <button class="pill primary" data-act="allow">Allow</button>
+        <button class="pill danger" data-act="deny">Deny</button>
+      </div>
+      <div class="stats" id="stats">
+        <div class="stat"><b id="sFps">–</b><span>FPS</span></div>
+        <div class="stat"><b id="sMbps">–</b><span>Mbps</span></div>
+        <div class="stat"><b id="sLat">–</b><span>Latency ms</span></div>
+        <div class="stat"><b id="sEnc">–</b><span>Encode ms</span></div>
+        <div class="stat"><b id="sDec">–</b><span>Decode ms</span></div>
+        <div class="stat"><b id="sLoss">–</b><span>Loss %</span></div>
+      </div>
+      <div class="controls">
+        <button class="pill primary" id="vrBtn" data-act="launch_steamvr">Launch SteamVR</button>
+        <button class="pill" data-act="idr">Refresh picture</button>
+        <button class="pill danger" data-act="disconnect" id="discBtn">Disconnect</button>
+      </div>
+    </div>
+
+    <div class="glass side">
+      <div class="tabs" id="tabs">
+        <button data-t="stream" class="on">Stream</button>
+        <button data-t="steamvr">SteamVR</button>
+        <button data-t="audio">Audio</button>
+        <button data-t="look">Look</button>
+        <button data-t="devices">Devices</button>
+        <button data-t="about">About</button>
+      </div>
+      <div class="pane">
+        <section data-tab="stream" class="on">
+          <h3>Picture</h3>
+          <div class="field"><div class="lbl"><b>VR quality</b><span>Resolution sent to SteamVR games. Higher looks sharper but needs a faster GPU and Wi-Fi.</span></div>
+            <div class="seg" data-key="quality"><button data-v="0">Low</button><button data-v="1">Medium</button><button data-v="2">High</button><button data-v="3">Ultra</button></div></div>
+          <div class="field"><div class="lbl"><b>Bitrate</b><span>100-150 Mbps suits Wi-Fi 6. Lower it if the picture stutters or smears.</span></div>
+            <input type="range" min="10" max="250" step="5" data-key="bitrateMbps"><div class="val" id="vBitrate"></div></div>
+          <div class="field"><div class="lbl"><b>Codec</b><span>HEVC gives a cleaner picture at the same bitrate. Auto picks HEVC when your GPU supports it.</span></div>
+            <div class="seg" data-key="codec"><button data-v="auto">Auto</button><button data-v="h264">H.264</button><button data-v="hevc">HEVC</button></div></div>
+          <div class="field"><div class="lbl"><b>Refresh rate</b><span>Asks the headset for this rate. 90 Hz is smoother; 72 Hz is easiest on the PC.</span></div>
+            <div class="seg" data-key="refresh"><button data-v="0">Headset</button><button data-v="72">72</button><button data-v="80">80</button><button data-v="90">90</button><button data-v="120">120</button></div></div>
+          <h3>Desktop</h3>
+          <div class="field"><div class="lbl"><b>Monitor</b><span>Which screen to show in the headset. You can also switch from the headset menu.</span></div>
+            <select data-key="monitor" id="monSel"></select></div>
+          <div class="field"><div class="lbl"><b>Desktop frame rate</b></div>
+            <div class="seg" data-key="desktopFps"><button data-v="30">30</button><button data-v="60">60</button><button data-v="72">72</button><button data-v="90">90</button></div></div>
+          <div class="field"><div class="lbl"><b>Desktop resolution</b><span>Capped width. Native sends every pixel of your monitor.</span></div>
+            <div class="seg" data-key="desktopMaxWidth"><button data-v="1920">1080p</button><button data-v="2560">1440p</button><button data-v="0">Native</button></div></div>
+        </section>
+
+        <section data-tab="steamvr">
+          <h3>Ready for PC VR</h3>
+          <div class="check"><i id="cInst">?</i><div class="lbl"><b>SteamVR installed</b><span>Install SteamVR from Steam (it's free).</span></div></div>
+          <div class="check"><i id="cReg">?</i><div class="lbl"><b>Lunar driver registered</b><span>Lets SteamVR games see your Quest and Touch controllers.</span></div>
+            <button class="pill small" data-act="register_driver">Register</button></div>
+          <div class="check"><i id="cRun">?</i><div class="lbl"><b>SteamVR running</b><span id="cRunTxt">Launch it from here or from the headset.</span></div>
+            <button class="pill small" data-act="launch_steamvr">Launch</button><button class="pill small danger" data-act="stop_steamvr">Stop</button></div>
+          <div class="check"><i id="cXr">?</i><div class="lbl"><b>SteamVR is the OpenXR runtime</b><span id="cXrTxt">Gorilla Tag and most new games use OpenXR. In SteamVR: Settings → OpenXR → "Set SteamVR as OpenXR runtime".</span></div></div>
+          <h3>Play area</h3>
+          <div class="field"><div class="lbl"><b>Use the headset's floor and boundary</b><span>Sets SteamVR's play area automatically so you never see Room Setup. Your Quest guardian keeps you safe.</span></div>
+            <div class="sw" data-key="autoChaperone"></div></div>
+          <div class="field"><div class="lbl"><b>Reset play area now</b></div><button class="pill small" data-act="chaperone">Reset</button></div>
+          <h3>Controllers</h3>
+          <div class="field"><div class="lbl"><b>Controller pose</b><span>Grip matches what games expect from Touch controllers. Try Aim if hands feel tilted in a game.</span></div>
+            <div class="seg" data-key="controllerPoseMode"><button data-v="0">Grip</button><button data-v="1">Aim</button></div></div>
+          <div class="field"><div class="lbl"><b>Hand offset forward</b><span>Moves the virtual hands along the controller (cm).</span></div>
+            <input type="range" min="-8" max="8" step="0.5" id="offZ"><div class="val" id="vOffZ"></div></div>
+          <div class="field"><div class="lbl"><b>Hand tilt</b><span>Rotates the virtual hands up/down (degrees).</span></div>
+            <input type="range" min="-45" max="45" step="1" id="offRx"><div class="val" id="vOffRx"></div></div>
+        </section>
+
+        <section data-tab="audio">
+          <h3>Sound</h3>
+          <div class="field"><div class="lbl"><b>Play PC sound in the headset</b><span>Everything you'd hear from your speakers goes to the Quest.</span></div><div class="sw" data-key="audio"></div></div>
+          <h3>Microphone</h3>
+          <div class="field"><div class="lbl"><b>Use the headset microphone</b><span>So friends can hear you in games like Gorilla Tag.</span></div><div class="sw" data-key="mic"></div></div>
+          <div class="field"><div class="lbl"><b>Send it to</b><span id="micState">The headset mic plays into this device.</span></div><select data-key="micDevice" id="micSel"></select></div>
+          <p class="note">Windows has no built-in way for an app to add a microphone, so install the free <b>VB-Audio Virtual Cable</b>, pick <code>CABLE Input</code> above, then choose <code>CABLE Output</code> as the microphone in the game (or in Windows Sound settings).</p>
+        </section>
+
+        <section data-tab="look">
+          <h3>Theme</h3>
+          <div class="themes" id="themes"></div>
+          <h3>Custom colours</h3>
+          <div class="colors">
+            <label>GLOW<input type="color" data-c="customAccent"></label>
+            <label>GLOW 2<input type="color" data-c="customAccent2"></label>
+            <label>SKY<input type="color" data-c="customBg"></label>
+            <label>TEXT<input type="color" data-c="customInk"></label>
+            <button class="pill small" id="clearCustom" style="align-self:flex-end">Use theme colours</button>
+          </div>
+          <h3>Glass</h3>
+          <div class="field"><div class="lbl"><b>Frost</b></div><input type="range" min="0" max="50" data-key="blur"><div class="val" id="vBlur"></div></div>
+          <div class="field"><div class="lbl"><b>Glass tint</b></div><input type="range" min="0" max="300" data-key="tint"><div class="val" id="vTint"></div></div>
+          <div class="field"><div class="lbl"><b>Rounded corners</b></div><input type="range" min="0" max="44" data-key="corners"><div class="val" id="vCorners"></div></div>
+          <h3>Sky</h3>
+          <div class="field"><div class="lbl"><b>Stars</b></div><div class="sw" data-key="stars"></div></div>
+          <div class="field"><div class="lbl"><b>Big moon</b></div><div class="sw" data-key="bigMoon"></div></div>
+          <div class="field"><div class="lbl"><b>Clunk Mode</b><span>Disguise Lunar Desktop as a plain homemade Python program. Press K to toggle.</span></div><div class="sw" data-key="clunk"></div></div>
+          <p class="note">The theme is shared with the headset, so your Quest's sky and glass match this window.</p>
+        </section>
+
+        <section data-tab="devices">
+          <h3>Allowed headsets</h3>
+          <div class="devices" id="devices"></div>
+          <h3>Network</h3>
+          <p class="note">Your Quest and PC must be on the same network. For the best result, connect the PC to the router with a cable and the Quest to 5 GHz or 6 GHz Wi-Fi in the same room as the router.</p>
+          <div class="field"><div class="lbl"><b>Windows Firewall</b><span>If the headset can't find this PC, allow Lunar Desktop through the firewall.</span></div><button class="pill small" data-act="firewall">Allow through firewall</button></div>
+        </section>
+
+        <section data-tab="about">
+          <h3>Lunar Desktop</h3>
+          <p class="note" id="about"></p>
+          <div class="field"><div class="lbl"><b>Open window when Lunar Desktop starts</b></div><div class="sw" data-key="openWindowOnStart"></div></div>
+          <div class="field"><div class="lbl"><b>Start with Windows</b><span>Runs quietly in the tray so the headset can always connect.</span></div><div class="sw" data-key="startWithWindows"></div></div>
+          <h3>Log</h3>
+          <div class="log" id="log"></div>
+          <div class="controls" style="justify-content:flex-start"><button class="pill small" data-act="open_logs">Open log folder</button></div>
+        </section>
+      </div>
+    </div>
+  </main>
+  <div class="clunk-only clunkstatus" id="clunkStatus">&gt;&gt;&gt; waiting for headset</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const THEMES={
+  lunar:{name:"Lunar",accent:"#b8c6ff",accent2:"#6054be",bg:"#0a0f26",ink:"#eef1fb"},
+  eclipse:{name:"Eclipse",accent:"#ffc98a",accent2:"#a8431f",bg:"#140d0a",ink:"#fbf3ea"},
+  aurora:{name:"Aurora",accent:"#8ff0d0",accent2:"#2b7fa8",bg:"#06171b",ink:"#eafbf6"},
+  blood:{name:"Blood Moon",accent:"#ff9a8f",accent2:"#8a1f3a",bg:"#1a080b",ink:"#fdeeee"},
+  nebula:{name:"Nebula",accent:"#e3a8ff",accent2:"#c2417f",bg:"#150a27",ink:"#f7eefd"},
+  frost:{name:"Frost",accent:"#d8f1ff",accent2:"#4a7fa0",bg:"#0b1721",ink:"#f1f8fc"},
+  harvest:{name:"Harvest Moon",accent:"#ffd27a",accent2:"#b5651d",bg:"#17110a",ink:"#fff6e6"},
+  sunset:{name:"Sunset",accent:"#ff9e7a",accent2:"#b0368f",bg:"#1c0d1a",ink:"#fff0ea"},
+  ocean:{name:"Ocean",accent:"#7fd0ff",accent2:"#1f4fb5",bg:"#061324",ink:"#eaf6ff"},
+  forest:{name:"Forest",accent:"#a8e6a1",accent2:"#2e7d4f",bg:"#0a160f",ink:"#effaf0"},
+  sakura:{name:"Sakura",accent:"#ffb7d5",accent2:"#a04a8a",bg:"#1b0f1a",ink:"#fff0f6"},
+  cyber:{name:"Cyber",accent:"#7dfcff",accent2:"#ff2fb3",bg:"#0a0a14",ink:"#f2fbff"}
+};
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+let S=null, settings={}, editing=0;
+const hexRgb=h=>{h=h.replace('#','');return [0,2,4].map(i=>parseInt(h.substr(i,2),16)).join(',')};
+
+function applyLook(){
+  const t=THEMES[settings.theme]||THEMES.lunar;
+  const c={accent:settings.customAccent||t.accent,accent2:settings.customAccent2||t.accent2,bg:settings.customBg||t.bg,ink:settings.customInk||t.ink};
+  const r=document.documentElement.style;
+  r.setProperty('--accent',c.accent);r.setProperty('--accent-rgb',hexRgb(c.accent));r.setProperty('--accent2-rgb',hexRgb(c.accent2));r.setProperty('--accent2',c.accent2);
+  r.setProperty('--bg',c.bg);r.setProperty('--ink',c.ink);
+  r.setProperty('--blur',(settings.blur??26)+'px');r.setProperty('--tint',(settings.tint??100)/100);r.setProperty('--radius',(settings.corners??26)+'px');
+  $('#bigmoon').classList.toggle('hidden',settings.bigMoon===false);
+  $('#stars').classList.toggle('hidden',settings.stars===false);
+  document.body.classList.toggle('clunk',!!settings.clunk);
+  document.title=settings.clunk?'Lunar Desktop - desktop_streamer.py':'Lunar Desktop';
+  $$('.sw-theme').forEach(e=>e.classList.toggle('on',e.dataset.k===settings.theme&&!settings.customAccent));
+  $$('input[data-c]').forEach(e=>e.value=settings[e.dataset.c]||t[e.dataset.c.replace('custom','').replace(/^./,m=>m.toLowerCase())]);
+}
+
+function buildThemes(){
+  const box=$('#themes');
+  for(const [k,t] of Object.entries(THEMES)){
+    const d=document.createElement('div');d.className='sw-theme';d.dataset.k=k;
+    d.innerHTML=`<div class="ball" style="background:radial-gradient(circle at 35% 30%,#fff,color-mix(in srgb,${t.accent} 50%,#fff) 45%,${t.accent} 80%);box-shadow:0 0 16px ${t.accent},inset 0 0 0 30px transparent;outline:6px solid ${t.bg}"></div>${t.name}`;
+    d.onclick=()=>save({theme:k,customAccent:'',customAccent2:'',customBg:'',customInk:''});
+    box.appendChild(d);
+  }
+}
+
+async function save(obj){
+  Object.assign(settings,obj);applyLook();renderControls();
+  try{await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json','X-Lunar':'1'},body:JSON.stringify(obj)});}catch(e){toast('Lunar Desktop is not running');}
+}
+async function act(action,extra={}){
+  try{
+    const r=await(await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json','X-Lunar':'1'},body:JSON.stringify({action,...extra})})).json();
+    if(!r.ok&&r.error)toast(r.error);else if(action==='allow')toast('Headset allowed');
+    poll();
+  }catch(e){toast('Lunar Desktop is not running');}
+}
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2600);}
+
+function setRange(el,v){el.value=v;const p=(v-el.min)/(el.max-el.min)*100;el.style.setProperty('--p',p+'%');}
+function renderControls(){
+  if(editing)return;
+  $$('.seg[data-key]').forEach(seg=>{const v=String(settings[seg.dataset.key]);seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));});
+  $$('.sw[data-key]').forEach(sw=>sw.classList.toggle('on',!!settings[sw.dataset.key]));
+  $$('input[type=range][data-key]').forEach(r=>setRange(r,settings[r.dataset.key]??0));
+  $('#vBitrate').textContent=settings.bitrateMbps+' Mbps';
+  $('#vBlur').textContent=settings.blur+' px';$('#vTint').textContent=settings.tint+'%';$('#vCorners').textContent=settings.corners+' px';
+  const op=settings.controllerOffsetPos||[0,0,0],orr=settings.controllerOffsetRot||[0,0,0];
+  setRange($('#offZ'),-op[2]*100);$('#vOffZ').textContent=(-op[2]*100).toFixed(1)+' cm';
+  setRange($('#offRx'),orr[0]);$('#vOffRx').textContent=orr[0]+'°';
+}
+
+const glyphs={
+  idle:'<svg viewBox="0 0 24 24"><path d="M3 9.5a2.5 2.5 0 0 1 2.5-2.5h13A2.5 2.5 0 0 1 21 9.5v4a2.5 2.5 0 0 1-2.5 2.5h-3.2l-1.6-2.1a2 2 0 0 0-3.4 0L8.7 16H5.5A2.5 2.5 0 0 1 3 13.5z"/></svg>',
+  desktop:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>',
+  vr:'<svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.4L12 15l-1.8-4.6L5.5 9l4.7-1.4z"/><path d="M18 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>'
+};
+let lastGlyph='';
+function render(){
+  if(!S)return;
+  settings=S.settings;applyLook();renderControls();
+  const live=S.streaming&&S.mode!=='idle';
+  document.body.classList.toggle('live',live);
+  const g=live?S.mode:'idle';if(g!==lastGlyph){$('#glyph').innerHTML=glyphs[g];lastGlyph=g;}
+  $('#hdot').className='dot '+(live?'on':(S.connected?'wait':''));
+  $('#hstate').textContent=live?(S.mode==='vr'?'Streaming SteamVR':'Streaming desktop'):(S.connected?'Connecting…':'Waiting for headset');
+  $('#title').textContent=S.connected&&S.headset?S.headset:'Lunar Desktop';
+  $('#artist').textContent=live?(S.mode==='vr'?'Playing SteamVR':'Showing '+(S.source||'your desktop')):(S.connected?'Getting ready…':'Open Lunar Desktop on your Quest');
+  $('#upnext').textContent=live?`${S.codec} · ${S.resolution[0]}×${S.resolution[1]} · ${S.encoder||''}`:(S.computer?'This PC: '+S.computer:'');
+  const p=S.pending;$('#pending').classList.toggle('hidden',!p);if(p)$('#pendName').textContent=(p.name||'A headset')+' wants to connect';
+  const f=(v,d=0)=>live&&v?Number(v).toFixed(d):'–';
+  $('#sFps').textContent=f(S.fps);$('#sMbps').textContent=f(S.mbps);$('#sEnc').textContent=f(S.encodeMs,1);
+  $('#sDec').textContent=f(S.client.decodeMs,1);$('#sLoss').textContent=live?Number(S.client.loss||0).toFixed(1):'–';$('#sLat').textContent=f(S.client.networkMs,0);
+  $('#discBtn').disabled=!S.connected;
+  const sv=S.steamvr;const vb=$('#vrBtn');vb.textContent=sv.running?'Stop SteamVR':'Launch SteamVR';vb.dataset.act=sv.running?'stop_steamvr':'launch_steamvr';
+  const chk=(id,ok)=>{const e=$(id);e.className=ok?'ok':'no';e.textContent=ok?'✓':'!';};
+  chk('#cInst',sv.installed);chk('#cReg',sv.registered);chk('#cRun',sv.running);chk('#cXr',sv.openxrIsSteamVr);
+  $('#cRunTxt').textContent=sv.running?(sv.driverConnected?'Running with the Lunar headset.':'Running, but the Lunar driver did not load. Restart SteamVR.'):'Launch it from here or from the headset.';
+  // monitors / devices
+  const ms=$('#monSel');const mk=S.monitors.join('|');if(ms.dataset.k!==mk){ms.dataset.k=mk;ms.innerHTML=S.monitors.map((m,i)=>`<option value="${i}">${m}</option>`).join('');}
+  ms.value=settings.monitor;
+  const pd=$('#micSel');const opts=[...new Set([settings.micDevice,...S.playbackDevices.map(d=>d)])].filter(Boolean);const pk=opts.join('|');
+  if(pd.dataset.k!==pk){pd.dataset.k=pk;pd.innerHTML=opts.map(d=>`<option>${d.replace(/</g,'&lt;')}</option>`).join('');}
+  pd.value=settings.micDevice;
+  $('#micState').textContent=S.audio.micActive?('Playing into '+S.audio.micDevice):(settings.mic?'Waiting for "'+settings.micDevice+'" (is VB-Cable installed?)':'Off');
+  const dv=$('#devices');const tr=settings.trusted||[];
+  const dk=tr.map(d=>d.id).join('|');if(dv.dataset.k!==dk){dv.dataset.k=dk;dv.innerHTML=tr.length?tr.map(d=>`<div class="dev"><span class="thumb"></span><div>${(d.name||'Headset').replace(/</g,'&lt;')}<small>${d.id}</small></div><button class="pill small danger" data-forget="${d.id}">Forget</button></div>`).join(''):'<p class="note">No headsets yet. Open Lunar Desktop on your Quest and allow it here.</p>';}
+  $('#about').innerHTML=`Version <b>${S.version}</b>. Streams your desktop and SteamVR games to your Quest over Wi-Fi, in the Lunar look.`;
+  const lg=$('#log');const atBottom=lg.scrollTop+lg.clientHeight>=lg.scrollHeight-4;lg.textContent=S.log;if(atBottom)lg.scrollTop=lg.scrollHeight;
+  $('#clunkStatus').textContent='>>> '+(live?`streaming ${S.mode} to ${S.headset} (${Number(S.fps).toFixed(0)} fps)`:(S.connected?'headset connecting':'waiting for headset'));
+}
+
+async function poll(){try{S=await(await fetch('/api/state')).json();render();}catch(e){$('#hstate').textContent='Lunar Desktop is not running';}}
+
+// wiring
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;$$('#tabs button').forEach(x=>x.classList.toggle('on',x===b));$$('section[data-tab]').forEach(s=>s.classList.toggle('on',s.dataset.tab===b.dataset.t));};
+document.addEventListener('click',e=>{
+  const a=e.target.closest('[data-act]');
+  if(a){const n=a.dataset.act;if(n==='deny'&&!confirm('Deny this headset?'))return;act(n);return;}
+  const fg=e.target.closest('[data-forget]');if(fg){act('forget',{id:fg.dataset.forget});return;}
+  const sb=e.target.closest('.seg[data-key] button');
+  if(sb){const k=sb.parentElement.dataset.key;let v=sb.dataset.v;if(/^-?\d+(\.\d+)?$/.test(v))v=Number(v);save({[k]:v});return;}
+  const sw=e.target.closest('.sw[data-key]');if(sw){save({[sw.dataset.key]:!settings[sw.dataset.key]});}
+});
+$$('input[type=range][data-key]').forEach(r=>{
+  r.oninput=()=>{editing=1;setRange(r,r.value);const k=r.dataset.key;settings[k]=Number(r.value);applyLook();
+    if(k==='bitrateMbps')$('#vBitrate').textContent=r.value+' Mbps';if(k==='blur')$('#vBlur').textContent=r.value+' px';if(k==='tint')$('#vTint').textContent=r.value+'%';if(k==='corners')$('#vCorners').textContent=r.value+' px';};
+  r.onchange=()=>{editing=0;save({[r.dataset.key]:Number(r.value)});};
+});
+$('#offZ').oninput=e=>{editing=1;setRange(e.target,e.target.value);$('#vOffZ').textContent=Number(e.target.value).toFixed(1)+' cm';};
+$('#offZ').onchange=e=>{editing=0;const p=[...(settings.controllerOffsetPos||[0,0,0])];p[2]=-Number(e.target.value)/100;save({controllerOffsetPos:p});};
+$('#offRx').oninput=e=>{editing=1;setRange(e.target,e.target.value);$('#vOffRx').textContent=e.target.value+'°';};
+$('#offRx').onchange=e=>{editing=0;const p=[...(settings.controllerOffsetRot||[0,0,0])];p[0]=Number(e.target.value);save({controllerOffsetRot:p});};
+$('#monSel').onchange=e=>save({monitor:Number(e.target.value)});
+$('#micSel').onchange=e=>save({micDevice:e.target.value});
+$$('input[data-c]').forEach(i=>i.onchange=()=>save({[i.dataset.c]:i.value,...(i.dataset.c==='customAccent'?{}:{customAccent:settings.customAccent||(THEMES[settings.theme]||THEMES.lunar).accent})}));
+$('#clearCustom').onclick=()=>save({customAccent:'',customAccent2:'',customBg:'',customInk:''});
+document.addEventListener('keydown',e=>{if(e.key.toLowerCase()==='k'&&!e.ctrlKey&&!e.altKey&&!/input|select|textarea/i.test(document.activeElement.tagName))save({clunk:!settings.clunk});});
+
+// stars (DESIGN.md §2)
+const sc=$('#stars'),sx=sc.getContext('2d');let stars=[];
+function initStars(){const w=sc.width=innerWidth*devicePixelRatio,h=sc.height=innerHeight*devicePixelRatio;const n=Math.min(320,Math.floor(innerWidth*innerHeight/5200));
+  stars=Array.from({length:n},(_,i)=>({x:Math.random()*w,y:Math.random()*h,r:(.25+Math.random()*1.1)*devicePixelRatio,a:.2+Math.random()*.6,s:.0004+Math.random()*.0016,p:Math.random()*6.28,c:i%7===0?'201,212,255':'255,255,255'}));}
+function drawStars(t){sx.clearRect(0,0,sc.width,sc.height);for(const s of stars){sx.globalAlpha=s.a*(.55+.45*Math.sin(t*s.s+s.p));sx.fillStyle=`rgb(${s.c})`;sx.beginPath();sx.arc(s.x,s.y,s.r,0,6.283);sx.fill();}}
+// ring visualizer around the status moon: shows the live stream bitrate as a gentle corona
+const vz=$('#viz'),vx=vz.getContext('2d');const lv=new Float32Array(72);
+function drawViz(t){const W=vz.width=vz.clientWidth*devicePixelRatio,H=vz.height=vz.clientHeight*devicePixelRatio;const cx=W/2,cy=H/2,r0=W*.325;
+  const acc=getComputedStyle(document.documentElement).getPropertyValue('--accent-rgb');const live=document.body.classList.contains('live');
+  vx.lineCap='round';vx.lineWidth=Math.max(1.5*devicePixelRatio,W*.008);
+  const energy=live&&S?Math.min(1,(S.mbps||0)/(settings.bitrateMbps||100)):0;
+  for(let i=0;i<72;i++){const half=i<36?i:71-i;
+    const target=live?(.15+.55*energy*(.5+.5*Math.sin(t/260+half*.45))*(.6+.4*Math.sin(t/900+i))):.05+.03*Math.sin(t/900+i*.5);
+    lv[i]+=(target-lv[i])*.3;const a=i/72*Math.PI*2-Math.PI/2,len=2*devicePixelRatio+lv[i]*W*.16;
+    vx.strokeStyle=`rgba(${acc},${.22+lv[i]*.78})`;vx.beginPath();vx.moveTo(cx+Math.cos(a)*r0,cy+Math.sin(a)*r0);vx.lineTo(cx+Math.cos(a)*(r0+len),cy+Math.sin(a)*(r0+len));vx.stroke();}}
+function frame(t){if(settings.stars!==false&&!settings.clunk)drawStars(t);if(!settings.clunk)drawViz(t);requestAnimationFrame(frame);}
+addEventListener('resize',initStars);initStars();buildThemes();requestAnimationFrame(frame);
+poll();setInterval(poll,1000);
+</script>
+</body>
+</html>

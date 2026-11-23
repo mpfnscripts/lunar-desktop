@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+  <!-- The small glossy moon beside the "LUNAR MUSIC" title (CSS .logo), Lunar theme colors.
+       A lit sphere with a bite taken out by a background-colored circle. Glow: 0 0 22px rgba(184,198,255,.65). -->
+  <defs>
+    <radialGradient id="sphere" cx="35%" cy="30%" r="75%">
+      <stop offset="0" stop-color="#ffffff"/><stop offset="0.45" stop-color="#e3e8ff"/><stop offset="1" stop-color="#8f9bcc"/>
+    </radialGradient>
+    <clipPath id="c"><circle cx="20" cy="20" r="20"/></clipPath>
+  </defs>
+  <g clip-path="url(#c)">
+    <circle cx="20" cy="20" r="20" fill="url(#sphere)"/>
+    <circle cx="33" cy="13" r="20" fill="#0a0f26" fill-opacity="0.92"/>
+  </g>
+</svg>

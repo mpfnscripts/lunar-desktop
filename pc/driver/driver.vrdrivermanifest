@@ -1,0 +1,7 @@
+{
+	"alwaysActivate": false,
+	"name": "lunar",
+	"directory": "",
+	"resourceOnly": false,
+	"hmd_presence": [ "*.*" ]
+}

@@ -1,0 +1,10 @@
+build/
+pc/build*/
+quest/.gradle/
+quest/build/
+quest/app/build/
+quest/app/.cxx/
+quest/local.properties
+*.apk
+*.idx
+.DS_Store

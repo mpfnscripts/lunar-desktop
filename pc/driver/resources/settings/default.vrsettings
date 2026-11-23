@@ -1,0 +1,6 @@
+{
+	"driver_lunar": {
+		"enable": true,
+		"blocked_by_safe_mode": false
+	}
+}

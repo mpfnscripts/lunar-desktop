@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Lunar Music app icon: navy disc, soft periwinkle glow, pale crescent. Matches lunar-logo-round-1024.png. -->
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="70"/></filter>
+    <mask id="crescent"><rect width="1024" height="1024" fill="black"/>
+      <circle cx="512" cy="512" r="282" fill="white"/><circle cx="692" cy="432" r="292" fill="black"/></mask>
+    <clipPath id="badge"><circle cx="512" cy="512" r="488"/></clipPath>
+  </defs>
+  <g clip-path="url(#badge)">
+    <circle cx="512" cy="512" r="488" fill="#0a0f26"/>
+    <circle cx="512" cy="512" r="302" fill="#96aaff" fill-opacity="0.59" filter="url(#glow)"/>
+    <rect width="1024" height="1024" fill="#eef2ff" mask="url(#crescent)"/>
+  </g>
+</svg>

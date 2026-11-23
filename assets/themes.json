@@ -1,0 +1,586 @@
+{
+  "about": "Lunar Music themes. accent = main glow, accent2 = second glow, bg = background, ink = text. \"derived\" values are what the app computes from those four (see DESIGN.md for the formulas). \"linear01\" gives the same colors as 0-1 floats for game engines (sRGB, not linearized).",
+  "default": "lunar",
+  "order": [
+    "lunar",
+    "eclipse",
+    "aurora",
+    "blood",
+    "nebula",
+    "frost",
+    "harvest",
+    "sunset",
+    "ocean",
+    "forest",
+    "sakura",
+    "cyber"
+  ],
+  "themes": {
+    "lunar": {
+      "name": "Lunar",
+      "accent": "#b8c6ff",
+      "accent2": "#6054be",
+      "bg": "#0a0f26",
+      "ink": "#eef1fb",
+      "derived": {
+        "inkSoft": "#a5a9b7",
+        "inkFaint": "#6e7284",
+        "moonLight": "#e3e8ff",
+        "moonDark": "#8f9bcc",
+        "bgTop": "#070b1b",
+        "bgBottom": "#040610",
+        "vizBars": "#e3e8ff",
+        "clunk": {
+          "face": "#3f424b",
+          "light": "#454850",
+          "hover": "#525765",
+          "press": "#383c46",
+          "field": "#232429",
+          "selection": "#504699",
+          "lyricMark": "#6d6c63"
+        }
+      }
+    },
+    "eclipse": {
+      "name": "Eclipse",
+      "accent": "#ffc98a",
+      "accent2": "#a8431f",
+      "bg": "#140d0a",
+      "ink": "#fbf3ea",
+      "derived": {
+        "inkSoft": "#b1a9a2",
+        "inkFaint": "#7a726d",
+        "moonLight": "#ffe9d0",
+        "moonDark": "#bb9d83",
+        "bgTop": "#0e0907",
+        "bgBottom": "#080504",
+        "vizBars": "#ffe9d0",
+        "clunk": {
+          "face": "#47423d",
+          "light": "#4c4845",
+          "hover": "#5f5850",
+          "press": "#423c36",
+          "field": "#262523",
+          "selection": "#88391d",
+          "lyricMark": "#826d40"
+        }
+      }
+    },
+    "aurora": {
+      "name": "Aurora",
+      "accent": "#8ff0d0",
+      "accent2": "#2b7fa8",
+      "bg": "#06171b",
+      "ink": "#eafbf6",
+      "derived": {
+        "inkSoft": "#a1b2b0",
+        "inkFaint": "#6a7b7b",
+        "moonLight": "#d2f9ec",
+        "moonDark": "#76b5af",
+        "bgTop": "#041113",
+        "bgBottom": "#030a0b",
+        "vizBars": "#d2f9ec",
+        "clunk": {
+          "face": "#3a4746",
+          "light": "#414c4c",
+          "hover": "#4b5f5c",
+          "press": "#324140",
+          "field": "#212727",
+          "selection": "#266888",
+          "lyricMark": "#617855"
+        }
+      }
+    },
+    "blood": {
+      "name": "Blood Moon",
+      "accent": "#ff9a8f",
+      "accent2": "#8a1f3a",
+      "bg": "#1a080b",
+      "ink": "#fdeeee",
+      "derived": {
+        "inkSoft": "#b4a4a5",
+        "inkFaint": "#7e6d6f",
+        "moonLight": "#ffd7d2",
+        "moonDark": "#bb7f86",
+        "bgTop": "#130608",
+        "bgBottom": "#0b0305",
+        "vizBars": "#ffd7d2",
+        "clunk": {
+          "face": "#473d3e",
+          "light": "#4c4445",
+          "hover": "#5f4f51",
+          "press": "#423536",
+          "field": "#262224",
+          "selection": "#701d32",
+          "lyricMark": "#825e41"
+        }
+      }
+    },
+    "nebula": {
+      "name": "Nebula",
+      "accent": "#e3a8ff",
+      "accent2": "#c2417f",
+      "bg": "#150a27",
+      "ink": "#f7eefd",
+      "derived": {
+        "inkSoft": "#afa5b9",
+        "inkFaint": "#786e85",
+        "moonLight": "#f4dcff",
+        "moonDark": "#aa88cc",
+        "bgTop": "#0f071c",
+        "bgBottom": "#090410",
+        "vizBars": "#f4dcff",
+        "clunk": {
+          "face": "#443e4b",
+          "light": "#494550",
+          "hover": "#5a5265",
+          "press": "#3e3746",
+          "field": "#252329",
+          "selection": "#9c3768",
+          "lyricMark": "#7a6363"
+        }
+      }
+    },
+    "frost": {
+      "name": "Frost",
+      "accent": "#d8f1ff",
+      "accent2": "#4a7fa0",
+      "bg": "#0b1721",
+      "ink": "#f1f8fc",
+      "derived": {
+        "inkSoft": "#a7b0b6",
+        "inkFaint": "#707a81",
+        "moonLight": "#eff9ff",
+        "moonDark": "#a3b5cc",
+        "bgTop": "#081118",
+        "bgBottom": "#050a0e",
+        "vizBars": "#eff9ff",
+        "clunk": {
+          "face": "#42474b",
+          "light": "#484c50",
+          "hover": "#585f65",
+          "press": "#3c4246",
+          "field": "#242729",
+          "selection": "#3e6881",
+          "lyricMark": "#777963"
+        }
+      }
+    },
+    "harvest": {
+      "name": "Harvest Moon",
+      "accent": "#ffd27a",
+      "accent2": "#b5651d",
+      "bg": "#17110a",
+      "ink": "#fff6e6",
+      "derived": {
+        "inkSoft": "#b5ada0",
+        "inkFaint": "#7d766b",
+        "moonLight": "#ffedca",
+        "moonDark": "#bba279",
+        "bgTop": "#110c07",
+        "bgBottom": "#0a0704",
+        "vizBars": "#ffedca",
+        "clunk": {
+          "face": "#47433c",
+          "light": "#4c4943",
+          "hover": "#5f594d",
+          "press": "#423d33",
+          "field": "#262523",
+          "selection": "#92531b",
+          "lyricMark": "#826f3b"
+        }
+      }
+    },
+    "sunset": {
+      "name": "Sunset",
+      "accent": "#ff9e7a",
+      "accent2": "#b0368f",
+      "bg": "#1c0d1a",
+      "ink": "#fff0ea",
+      "derived": {
+        "inkSoft": "#b6a7a7",
+        "inkFaint": "#807176",
+        "moonLight": "#ffd8ca",
+        "moonDark": "#bb8279",
+        "bgTop": "#140913",
+        "bgBottom": "#0c050b",
+        "vizBars": "#ffd8ca",
+        "clunk": {
+          "face": "#473d3c",
+          "light": "#4c4443",
+          "hover": "#5f504d",
+          "press": "#423633",
+          "field": "#262223",
+          "selection": "#8e2f74",
+          "lyricMark": "#82603b"
+        }
+      }
+    },
+    "ocean": {
+      "name": "Ocean",
+      "accent": "#7fd0ff",
+      "accent2": "#1f4fb5",
+      "bg": "#061324",
+      "ink": "#eaf6ff",
+      "derived": {
+        "inkSoft": "#a1adb9",
+        "inkFaint": "#6a7784",
+        "moonLight": "#ccecff",
+        "moonDark": "#6ca1cc",
+        "bgTop": "#040e1a",
+        "bgBottom": "#03080f",
+        "vizBars": "#ccecff",
+        "clunk": {
+          "face": "#38434b",
+          "light": "#3f4950",
+          "hover": "#485965",
+          "press": "#303d46",
+          "field": "#202529",
+          "selection": "#1d4292",
+          "lyricMark": "#5c6f63"
+        }
+      }
+    },
+    "forest": {
+      "name": "Forest",
+      "accent": "#a8e6a1",
+      "accent2": "#2e7d4f",
+      "bg": "#0a160f",
+      "ink": "#effaf0",
+      "derived": {
+        "inkSoft": "#a6b1a8",
+        "inkFaint": "#6f7a72",
+        "moonLight": "#dcf5d9",
+        "moonDark": "#85af91",
+        "bgTop": "#07100b",
+        "bgBottom": "#040906",
+        "vizBars": "#dcf5d9",
+        "clunk": {
+          "face": "#3d4640",
+          "light": "#434b47",
+          "hover": "#4f5d54",
+          "press": "#364039",
+          "field": "#222625",
+          "selection": "#286642",
+          "lyricMark": "#687547"
+        }
+      }
+    },
+    "sakura": {
+      "name": "Sakura",
+      "accent": "#ffb7d5",
+      "accent2": "#a04a8a",
+      "bg": "#1b0f1a",
+      "ink": "#fff0f6",
+      "derived": {
+        "inkSoft": "#b6a8b0",
+        "inkFaint": "#7f727b",
+        "moonLight": "#ffe2ee",
+        "moonDark": "#bb91b2",
+        "bgTop": "#130b13",
+        "bgBottom": "#0b060b",
+        "vizBars": "#ffe2ee",
+        "clunk": {
+          "face": "#474046",
+          "light": "#4c464c",
+          "hover": "#5f555d",
+          "press": "#423940",
+          "field": "#262427",
+          "selection": "#813e70",
+          "lyricMark": "#826756"
+        }
+      }
+    },
+    "cyber": {
+      "name": "Cyber",
+      "accent": "#7dfcff",
+      "accent2": "#ff2fb3",
+      "bg": "#0a0a14",
+      "ink": "#f2fbff",
+      "derived": {
+        "inkSoft": "#a8aeb4",
+        "inkFaint": "#70747b",
+        "moonLight": "#cbfeff",
+        "moonDark": "#6abccc",
+        "bgTop": "#07070e",
+        "bgBottom": "#040408",
+        "vizBars": "#cbfeff",
+        "clunk": {
+          "face": "#37484b",
+          "light": "#3f4d50",
+          "hover": "#486165",
+          "press": "#304346",
+          "field": "#202729",
+          "selection": "#cc2990",
+          "lyricMark": "#5b7c63"
+        }
+      }
+    }
+  },
+  "linear01": {
+    "lunar": {
+      "accent": [
+        0.7216,
+        0.7765,
+        1.0
+      ],
+      "accent2": [
+        0.3765,
+        0.3294,
+        0.7451
+      ],
+      "bg": [
+        0.0392,
+        0.0588,
+        0.149
+      ],
+      "ink": [
+        0.9333,
+        0.9451,
+        0.9843
+      ]
+    },
+    "eclipse": {
+      "accent": [
+        1.0,
+        0.7882,
+        0.5412
+      ],
+      "accent2": [
+        0.6588,
+        0.2627,
+        0.1216
+      ],
+      "bg": [
+        0.0784,
+        0.051,
+        0.0392
+      ],
+      "ink": [
+        0.9843,
+        0.9529,
+        0.9176
+      ]
+    },
+    "aurora": {
+      "accent": [
+        0.5608,
+        0.9412,
+        0.8157
+      ],
+      "accent2": [
+        0.1686,
+        0.498,
+        0.6588
+      ],
+      "bg": [
+        0.0235,
+        0.0902,
+        0.1059
+      ],
+      "ink": [
+        0.9176,
+        0.9843,
+        0.9647
+      ]
+    },
+    "blood": {
+      "accent": [
+        1.0,
+        0.6039,
+        0.5608
+      ],
+      "accent2": [
+        0.5412,
+        0.1216,
+        0.2275
+      ],
+      "bg": [
+        0.102,
+        0.0314,
+        0.0431
+      ],
+      "ink": [
+        0.9922,
+        0.9333,
+        0.9333
+      ]
+    },
+    "nebula": {
+      "accent": [
+        0.8902,
+        0.6588,
+        1.0
+      ],
+      "accent2": [
+        0.7608,
+        0.2549,
+        0.498
+      ],
+      "bg": [
+        0.0824,
+        0.0392,
+        0.1529
+      ],
+      "ink": [
+        0.9686,
+        0.9333,
+        0.9922
+      ]
+    },
+    "frost": {
+      "accent": [
+        0.8471,
+        0.9451,
+        1.0
+      ],
+      "accent2": [
+        0.2902,
+        0.498,
+        0.6275
+      ],
+      "bg": [
+        0.0431,
+        0.0902,
+        0.1294
+      ],
+      "ink": [
+        0.9451,
+        0.9725,
+        0.9882
+      ]
+    },
+    "harvest": {
+      "accent": [
+        1.0,
+        0.8235,
+        0.4784
+      ],
+      "accent2": [
+        0.7098,
+        0.3961,
+        0.1137
+      ],
+      "bg": [
+        0.0902,
+        0.0667,
+        0.0392
+      ],
+      "ink": [
+        1.0,
+        0.9647,
+        0.902
+      ]
+    },
+    "sunset": {
+      "accent": [
+        1.0,
+        0.6196,
+        0.4784
+      ],
+      "accent2": [
+        0.6902,
+        0.2118,
+        0.5608
+      ],
+      "bg": [
+        0.1098,
+        0.051,
+        0.102
+      ],
+      "ink": [
+        1.0,
+        0.9412,
+        0.9176
+      ]
+    },
+    "ocean": {
+      "accent": [
+        0.498,
+        0.8157,
+        1.0
+      ],
+      "accent2": [
+        0.1216,
+        0.3098,
+        0.7098
+      ],
+      "bg": [
+        0.0235,
+        0.0745,
+        0.1412
+      ],
+      "ink": [
+        0.9176,
+        0.9647,
+        1.0
+      ]
+    },
+    "forest": {
+      "accent": [
+        0.6588,
+        0.902,
+        0.6314
+      ],
+      "accent2": [
+        0.1804,
+        0.4902,
+        0.3098
+      ],
+      "bg": [
+        0.0392,
+        0.0863,
+        0.0588
+      ],
+      "ink": [
+        0.9373,
+        0.9804,
+        0.9412
+      ]
+    },
+    "sakura": {
+      "accent": [
+        1.0,
+        0.7176,
+        0.8353
+      ],
+      "accent2": [
+        0.6275,
+        0.2902,
+        0.5412
+      ],
+      "bg": [
+        0.1059,
+        0.0588,
+        0.102
+      ],
+      "ink": [
+        1.0,
+        0.9412,
+        0.9647
+      ]
+    },
+    "cyber": {
+      "accent": [
+        0.4902,
+        0.9882,
+        1.0
+      ],
+      "accent2": [
+        1.0,
+        0.1843,
+        0.702
+      ],
+      "bg": [
+        0.0392,
+        0.0392,
+        0.0784
+      ],
+      "ink": [
+        0.949,
+        0.9843,
+        1.0
+      ]
+    }
+  }
+}
