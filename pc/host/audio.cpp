@@ -1,7 +1,6 @@
 #include "audio.h"
 #include <windows.h>
 #include <audioclient.h>
-#include <functiondiscoverykeys_devpkey.h>
 #include <mmdeviceapi.h>
 #include <math.h>
 #include "log.h"
