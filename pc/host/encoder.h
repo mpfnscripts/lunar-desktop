@@ -5,6 +5,8 @@
 #include <mfapi.h>
 #include <mfidl.h>
 #include <mftransform.h>
+#include <strmif.h>
+#include <codecapi.h>
 #include <stdint.h>
 #include <string>
 #include <vector>
