@@ -225,7 +225,23 @@ bool SetupChaperone() {
     return ok;
 }
 
+// Per-user override (HKCU\Environment\XR_RUNTIME_JSON). The OpenXR loader prefers it over the
+// system-wide ActiveRuntime, and setting it needs no admin rights.
+std::string UserOpenXrOverride() {
+    HKEY k;
+    std::string out;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Environment", 0, KEY_READ, &k) == ERROR_SUCCESS) {
+        wchar_t buf[1024];
+        DWORD sz = sizeof(buf);
+        if (RegQueryValueExW(k, L"XR_RUNTIME_JSON", nullptr, nullptr, (BYTE *)buf, &sz) == ERROR_SUCCESS) out = Narrow(buf);
+        RegCloseKey(k);
+    }
+    return out;
+}
+
 std::string ActiveOpenXrRuntime() {
+    std::string user = UserOpenXrOverride();
+    if (!user.empty()) return user;
     HKEY k;
     std::string out;
     if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Khronos\\OpenXR\\1", 0, KEY_READ | KEY_WOW64_64KEY, &k) == ERROR_SUCCESS) {
@@ -240,7 +256,39 @@ std::string ActiveOpenXrRuntime() {
 bool OpenXrIsSteamVr() {
     std::string r = ActiveOpenXrRuntime();
     for (auto &c : r) c = (char)tolower((unsigned char)c);
-    return r.find("steamvr") != std::string::npos;
+    return r.find("steamxr") != std::string::npos || r.find("steamvr") != std::string::npos;
+}
+
+bool UseSteamVrForOpenXr(std::string *error) {
+    std::wstring rt = RuntimePath();
+    std::wstring json = rt + L"\\steamxr_win64.json";
+    if (rt.empty() || !Exists(json)) {
+        if (error) *error = "SteamVR is not installed.";
+        return false;
+    }
+    HKEY k;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Environment", 0, KEY_SET_VALUE, &k) != ERROR_SUCCESS) {
+        if (error) *error = "Couldn't change your user settings.";
+        return false;
+    }
+    RegSetValueExW(k, L"XR_RUNTIME_JSON", 0, REG_SZ, (const BYTE *)json.c_str(), (DWORD)((json.size() + 1) * 2));
+    RegCloseKey(k);
+    SetEnvironmentVariableW(L"XR_RUNTIME_JSON", json.c_str());  // also for SteamVR started by us
+    DWORD_PTR res;
+    SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"Environment", SMTO_ABORTIFHUNG, 3000, &res);
+    Log("OpenXR games will now use SteamVR (per-user XR_RUNTIME_JSON)");
+    return true;
+}
+
+void UndoSteamVrForOpenXr() {
+    HKEY k;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Environment", 0, KEY_SET_VALUE, &k) == ERROR_SUCCESS) {
+        RegDeleteValueW(k, L"XR_RUNTIME_JSON");
+        RegCloseKey(k);
+    }
+    SetEnvironmentVariableW(L"XR_RUNTIME_JSON", nullptr);
+    DWORD_PTR res;
+    SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, (LPARAM)L"Environment", SMTO_ABORTIFHUNG, 3000, &res);
 }
 
 }  // namespace steamvr

@@ -281,7 +281,8 @@ body.clunk .sw-theme.on{border-style:inset;box-shadow:none}
             <button class="pill small" data-act="register_driver">Register</button></div>
           <div class="check"><i id="cRun">?</i><div class="lbl"><b>SteamVR running</b><span id="cRunTxt">Launch it from here or from the headset.</span></div>
             <button class="pill small" data-act="launch_steamvr">Launch</button><button class="pill small danger" data-act="stop_steamvr">Stop</button></div>
-          <div class="check"><i id="cXr">?</i><div class="lbl"><b>SteamVR is the OpenXR runtime</b><span id="cXrTxt">Gorilla Tag and most new games use OpenXR. In SteamVR: Settings → OpenXR → "Set SteamVR as OpenXR runtime".</span></div></div>
+          <div class="check"><i id="cXr">?</i><div class="lbl"><b>SteamVR is the OpenXR runtime</b><span id="cXrTxt">Gorilla Tag and most new games use OpenXR. If another app (Virtual Desktop, Meta Link) is set, games won't reach SteamVR. Click Use SteamVR (no admin needed), then fully quit and reopen Steam.</span></div>
+            <button class="pill small primary" data-act="openxr_steamvr" id="xrBtn">Use SteamVR</button><button class="pill small hidden" data-act="openxr_undo" id="xrUndo">Undo</button></div>
           <h3>Play area</h3>
           <div class="field"><div class="lbl"><b>Use the headset's floor and boundary</b><span>Sets SteamVR's play area automatically so you never see Room Setup. Your Quest guardian keeps you safe.</span></div>
             <div class="sw" data-key="autoChaperone"></div></div>
@@ -403,7 +404,7 @@ async function save(obj){
 async function act(action,extra={}){
   try{
     const r=await(await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json','X-Lunar':'1'},body:JSON.stringify({action,...extra})})).json();
-    if(!r.ok&&r.error)toast(r.error);else if(action==='allow')toast('Headset allowed');else if(action==='firewall')toast('Firewall fixed. Try connecting again from the headset.');
+    if(!r.ok&&r.error)toast(r.error);else if(action==='allow')toast('Headset allowed');else if(action==='openxr_steamvr')toast('Done. Quit Steam completely and open it again.');else if(action==='firewall')toast('Firewall fixed. Try connecting again from the headset.');
     poll();
   }catch(e){toast('Lunar Desktop is not running');}
 }
@@ -449,6 +450,7 @@ function render(){
   const sv=S.steamvr;const vb=$('#vrBtn');vb.textContent=sv.running?'Stop SteamVR':'Launch SteamVR';vb.dataset.act=sv.running?'stop_steamvr':'launch_steamvr';
   const chk=(id,ok)=>{const e=$(id);e.className=ok?'ok':'no';e.textContent=ok?'✓':'!';};
   chk('#cInst',sv.installed);chk('#cReg',sv.registered);chk('#cRun',sv.running);chk('#cXr',sv.openxrIsSteamVr);
+  $('#xrBtn').classList.toggle('hidden',sv.openxrIsSteamVr);$('#xrUndo').classList.toggle('hidden',!sv.openxrUserOverride);
   $('#cRunTxt').textContent=sv.running?(sv.driverConnected?'Running with the Lunar headset.':'Running, but the Lunar driver did not load. Restart SteamVR.'):'Launch it from here or from the headset.';
   // monitors / devices
   const ms=$('#monSel');const mk=S.monitors.join('|');if(ms.dataset.k!==mk){ms.dataset.k=mk;ms.innerHTML=S.monitors.map((m,i)=>`<option value="${i}">${m}</option>`).join('');}

@@ -58,7 +58,7 @@ The headset reconnects automatically after that.
 2. In Lunar Desktop on the PC, open the **SteamVR** tab and make sure every line has a green tick:
    - SteamVR installed
    - Lunar driver registered
-   - **SteamVR is the OpenXR runtime.** Gorilla Tag uses OpenXR. If this line shows "!", open SteamVR → *Settings → OpenXR → Set SteamVR as OpenXR runtime*. If you also have the Meta Quest Link app, it may have taken over this setting.
+   - **SteamVR is the OpenXR runtime.** Gorilla Tag uses OpenXR. If this line shows "!" (for example because Virtual Desktop or Meta Link is set as the runtime), click **Use SteamVR**, then quit Steam completely (tray icon → Exit) and open it again. This works **without admin rights** because it only changes your Windows user's settings. **Undo** switches back.
 3. Put on the headset and connect. Press the glowing **SteamVR** button on the dock (or *Launch SteamVR* on the PC).
 4. Launch Gorilla Tag from Steam (on the PC or from the SteamVR menu).
 5. **Voice chat:** install the free [VB-Audio Virtual Cable](https://vb-audio.com/Cable/). In Lunar Desktop → **Audio**, choose `CABLE Input`. Then set `CABLE Output` as your microphone, either in Gorilla Tag's settings or as the Windows default recording device. Your Quest's mic now reaches the game.

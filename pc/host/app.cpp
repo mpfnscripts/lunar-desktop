@@ -786,7 +786,8 @@ json App::StateJson() {
                     {"running", m_steamvrRunning},
                     {"driverConnected", m_ipc->driverHeartbeatUs && now - m_ipc->driverHeartbeatUs < 2000000},
                     {"openxrIsSteamVr", steamvr::OpenXrIsSteamVr()},
-                    {"openxrRuntime", steamvr::ActiveOpenXrRuntime()}};
+                    {"openxrRuntime", steamvr::ActiveOpenXrRuntime()},
+                    {"openxrUserOverride", !steamvr::UserOpenXrOverride().empty()}};
     j["audio"] = {{"capturing", m_audio.Running()}, {"micActive", m_mic.Active()}, {"micDevice", m_mic.DeviceName()}};
     json mons = json::array();
     for (auto &m : EnumerateMonitors()) mons.push_back(m.name);
@@ -865,6 +866,14 @@ std::string App::Action(const std::string &name, const json &args) {
         bool ok = FixFirewall();
         g_firewallOk = ok ? 1 : 0;
         return ok ? "" : "Windows did not allow the change.";
+    }
+    if (name == "openxr_steamvr") {
+        std::string err;
+        return steamvr::UseSteamVrForOpenXr(&err) ? "" : err;
+    }
+    if (name == "openxr_undo") {
+        steamvr::UndoSteamVrForOpenXr();
+        return "";
     }
     if (name == "openxr_settings") {
         steamvr::Launch();

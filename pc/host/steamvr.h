@@ -14,4 +14,8 @@ void Stop();
 bool SetupChaperone();
 std::string ActiveOpenXrRuntime();   // json path from the registry (empty if none)
 bool OpenXrIsSteamVr();
+std::string UserOpenXrOverride();
+// Points OpenXR games at SteamVR for this Windows user only (no admin needed). Restart Steam afterwards.
+bool UseSteamVrForOpenXr(std::string *error);
+void UndoSteamVrForOpenXr();
 }
