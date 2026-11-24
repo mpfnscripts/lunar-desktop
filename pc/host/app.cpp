@@ -126,6 +126,7 @@ void App::Stop() {
 void App::OnSettingsChanged() {
     HostSettings s = g_settings.Get();
     m_bitrateKbps = (uint32_t)s.bitrateMbps * 1000;
+    m_net.SetManualHeadsetIp(s.headsetIp);
     if (m_ipc) {
         m_ipc->controllerPoseMode = s.controllerPoseMode;
         for (int i = 0; i < 3; i++) {

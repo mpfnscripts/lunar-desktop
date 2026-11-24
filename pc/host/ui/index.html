@@ -227,7 +227,7 @@ body.clunk .sw-theme.on{border-style:inset;box-shadow:none}
       </div>
       <div class="pending hidden" id="fwWarn">
         <b>Windows Firewall is blocking your headset</b>
-        <p>This is why the Quest gets stuck on "Connecting". Click Fix and choose Yes when Windows asks.</p>
+        <p>Lunar Desktop will still try to reach your Quest by itself. If you have admin rights, Fix makes connecting faster.</p>
         <button class="pill primary" data-act="firewall">Fix firewall</button>
       </div>
       <div class="stats" id="stats">
@@ -331,6 +331,8 @@ body.clunk .sw-theme.on{border-style:inset;box-shadow:none}
           <div class="devices" id="devices"></div>
           <h3>Network</h3>
           <p class="note">Your Quest and PC must be on the same network. For the best result, connect the PC to the router with a cable and the Quest to 5 GHz or 6 GHz Wi-Fi in the same room as the router.</p>
+          <div class="field"><div class="lbl"><b>Headset IP address</b><span>Optional. Lunar Desktop finds your Quest by itself, but if it doesn't, type the IP shown on the headset's connect screen.</span></div>
+            <input type="text" id="hsIp" placeholder="192.168.1.42" style="width:170px"></div>
           <div class="field"><div class="lbl"><b>Windows Firewall</b><span>If the headset can't find this PC, allow Lunar Desktop through the firewall.</span></div><button class="pill small" data-act="firewall">Allow through firewall</button></div>
         </section>
 
@@ -441,7 +443,8 @@ function render(){
   const f=(v,d=0)=>live&&v?Number(v).toFixed(d):'–';
   $('#sFps').textContent=f(S.fps);$('#sMbps').textContent=f(S.mbps);$('#sEnc').textContent=f(S.encodeMs,1);
   $('#sDec').textContent=f(S.client.decodeMs,1);$('#sLoss').textContent=live?Number(S.client.loss||0).toFixed(1):'–';$('#sLat').textContent=f(S.client.networkMs,0);
-  $('#fwWarn').classList.toggle('hidden',S.firewall!==0);
+  $('#fwWarn').classList.toggle('hidden',S.firewall!==0||S.connected);
+  if(document.activeElement!==$('#hsIp'))$('#hsIp').value=settings.headsetIp||'';
   $('#discBtn').disabled=!S.connected;
   const sv=S.steamvr;const vb=$('#vrBtn');vb.textContent=sv.running?'Stop SteamVR':'Launch SteamVR';vb.dataset.act=sv.running?'stop_steamvr':'launch_steamvr';
   const chk=(id,ok)=>{const e=$(id);e.className=ok?'ok':'no';e.textContent=ok?'✓':'!';};
@@ -483,6 +486,7 @@ $('#offZ').onchange=e=>{editing=0;const p=[...(settings.controllerOffsetPos||[0,
 $('#offRx').oninput=e=>{editing=1;setRange(e.target,e.target.value);$('#vOffRx').textContent=e.target.value+'°';};
 $('#offRx').onchange=e=>{editing=0;const p=[...(settings.controllerOffsetRot||[0,0,0])];p[0]=Number(e.target.value);save({controllerOffsetRot:p});};
 $('#monSel').onchange=e=>save({monitor:Number(e.target.value)});
+$('#hsIp').onchange=e=>save({headsetIp:e.target.value.trim()});
 $('#micSel').onchange=e=>save({micDevice:e.target.value});
 $$('input[data-c]').forEach(i=>i.onchange=()=>save({[i.dataset.c]:i.value,...(i.dataset.c==='customAccent'?{}:{customAccent:settings.customAccent||(THEMES[settings.theme]||THEMES.lunar).accent})}));
 $('#clearCustom').onclick=()=>save({customAccent:'',customAccent2:'',customBg:'',customInk:''});

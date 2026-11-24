@@ -39,6 +39,8 @@ static json ToJ(const HostSettings &s) {
     j["autoChaperone"] = s.autoChaperone;
     j["openWindowOnStart"] = s.openWindowOnStart;
     j["startWithWindows"] = s.startWithWindows;
+    j["headsetIp"] = s.headsetIp;
+    j["firewallAsked"] = s.firewallAsked;
     json t = json::array();
     for (auto &d : s.trusted) t.push_back({{"id", d.id}, {"name", d.name}});
     j["trusted"] = t;
@@ -98,6 +100,8 @@ static bool ApplyTo(HostSettings &s, const json &j) {
     ch |= Take(j, "autoChaperone", s.autoChaperone);
     ch |= Take(j, "openWindowOnStart", s.openWindowOnStart);
     ch |= Take(j, "startWithWindows", s.startWithWindows);
+    ch |= Take(j, "headsetIp", s.headsetIp);
+    ch |= Take(j, "firewallAsked", s.firewallAsked);
     auto t = j.find("trusted");
     if (t != j.end() && t->is_array()) {
         s.trusted.clear();

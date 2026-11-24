@@ -679,7 +679,7 @@ void App::drawConnectUi(Panel &p) {
         ui.text(x, 330, "You only need to do this once.", 22, t.inkFaint, FONT_REGULAR);
         if (ui.button(10, Rect(x, 400, 220, 64), "Cancel")) {
             m_prefs.autoConnect = false;
-            m_net.disconnect();
+            m_net.cancel();
         }
         return;
     }
@@ -705,12 +705,12 @@ void App::drawConnectUi(Panel &p) {
         if (ui.button(12, Rect(x, 620, 220, 64), "Stop trying")) {
             m_prefs.autoConnect = false;
             m_connectFails = 0;
-            m_net.disconnect();
+            m_net.cancel();
         }
         if (ui.button(13, Rect(x + 240, 620, 300, 64), "Enter IP address", false, false, ICON_WIFI)) {
             m_prefs.autoConnect = false;
             m_connectFails = 0;
-            m_net.disconnect();
+            m_net.cancel();
             m_manualEntry = true;
             m_manualIp.clear();
         }
@@ -721,7 +721,7 @@ void App::drawConnectUi(Panel &p) {
         ui.text(x, 290, m_net.stateText().c_str(), 24, t.inkSoft, FONT_REGULAR, ALIGN_LEFT, 0.02f, Color(0, 0, 0, 0), w);
         if (ui.button(11, Rect(x, 360, 220, 64), "Cancel")) {
             m_prefs.autoConnect = false;
-            m_net.disconnect();
+            m_net.cancel();
         }
         return;
     }
@@ -838,7 +838,7 @@ void App::drawDockUi(Panel &p) {
     x += gap;
     if (ui.roundButton(7, x, cy, r, ICON_POWER, false, false, "Disconnect")) {
         m_prefs.autoConnect = false;
-        m_net.disconnect();
+        m_net.cancel();
     }
 }
 
@@ -1024,13 +1024,13 @@ void App::drawSettingsUi(Panel &p) {
         y += 10;
         if (connected && ui.button(70, Rect(x, y, 260, 64), "Disconnect", false, false, ICON_POWER)) {
             m_prefs.autoConnect = false;
-            m_net.disconnect();
+            m_net.cancel();
         }
         if (ui.button(71, Rect(x + 280, y, 260, 64), "Forget this PC")) {
             m_prefs.lastHost.clear();
             m_prefs.autoConnect = false;
             savePrefs();
-            m_net.disconnect();
+            m_net.cancel();
         }
     }
 }
@@ -1158,7 +1158,7 @@ void App::drawOverlayUi(int w, int h) {
     }
     if (ui.button(23, Rect(40 + 3 * (bw + 16), by, bw, 66), "Disconnect")) {
         m_prefs.autoConnect = false;
-        m_net.disconnect();
+        m_net.cancel();
     }
     ui.text(w / 2.f, h - 44.f, "Hold the menu button to close", 18, t.inkFaint, FONT_REGULAR, ALIGN_CENTER, 0.05f);
     if (m_overlayPtr.valid) {

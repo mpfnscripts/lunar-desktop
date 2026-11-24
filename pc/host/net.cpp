@@ -1,4 +1,5 @@
 #include "net.h"
+#include <iphlpapi.h>
 #include <mstcpip.h>
 #ifndef SIO_UDP_CONNRESET
 #define SIO_UDP_CONNRESET _WSAIOW(IOC_VENDOR, 12)
@@ -53,6 +54,7 @@ bool Net::Start(const Callbacks &cb) {
     m_discThread = std::thread([this] { DiscoveryLoop(); });
     m_acceptThread = std::thread([this] { AcceptLoop(); });
     m_udpThread = std::thread([this] { UdpLoop(); });
+    m_revThread = std::thread([this] { ReverseLoop(); });
     Log("Listening: discovery %d, control %d, media %d", LUNAR_PORT_DISCOVERY, LUNAR_PORT_CONTROL, LUNAR_PORT_STREAM);
     return true;
 }
@@ -66,6 +68,7 @@ void Net::Stop() {
     if (m_discThread.joinable()) m_discThread.join();
     if (m_acceptThread.joinable()) m_acceptThread.join();
     if (m_udpThread.joinable()) m_udpThread.join();
+    if (m_revThread.joinable()) m_revThread.join();
     WSACleanup();
 }
 
@@ -101,6 +104,7 @@ void Net::DiscoveryLoop() {
             sendto(m_disc, (const char *)&ann, sizeof(ann), 0, (sockaddr *)&from, sizeof(from));
         }
         int64_t now = lunarNowUs();
+        PunchUdp();
         if (now - lastAnnounce > 2000000 && !Connected()) {
             lastAnnounce = now;
             sockaddr_in bc = {};
@@ -138,27 +142,157 @@ void Net::AcceptLoop() {
             Disconnect();
             Sleep(50);
         }
-        BOOL yes = TRUE;
-        setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (const char *)&yes, sizeof(yes));
-        setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (const char *)&yes, sizeof(yes));
-        m_clientAddr = from;
-        m_client = s;
-        Log("Headset connected from %s", ClientIp().c_str());
-        if (m_cb.onConnected) m_cb.onConnected();
+        RunSession(s, from, false);
+    }
+}
 
-        std::vector<uint8_t> buf;
-        while (m_run && m_client == s) {
-            LunarMsgHeader h;
-            if (!RecvAll(s, &h, sizeof(h))) break;
-            if (h.size > 16 * 1024 * 1024) break;
-            buf.resize(h.size);
-            if (h.size && !RecvAll(s, buf.data(), (int)h.size)) break;
-            if (m_cb.onMessage) m_cb.onMessage(h.type, buf.data(), h.size);
+// Runs one control session on an already connected socket (incoming or outgoing).
+void Net::RunSession(SOCKET s, const sockaddr_in &from, bool reverse) {
+    SOCKET expectedEmpty = INVALID_SOCKET;
+    if (!m_client.compare_exchange_strong(expectedEmpty, s)) {
+        closesocket(s);  // another session is already active
+        return;
+    }
+    BOOL yes = TRUE;
+    setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (const char *)&yes, sizeof(yes));
+    setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (const char *)&yes, sizeof(yes));
+    m_clientAddr = from;
+    m_clientAddr.sin_port = 0;
+    Log("Headset connected from %s%s", ClientIp().c_str(), reverse ? " (PC dialed out to the headset)" : "");
+    if (reverse) {
+        std::lock_guard<std::mutex> lk(m_revLock);
+        m_lastHeadsetIp = ClientIp();
+    }
+    if (m_cb.onConnected) m_cb.onConnected();
+    // open the UDP path through the PC firewall straight away
+    PunchUdp();
+
+    std::vector<uint8_t> buf;
+    while (m_run && m_client == s) {
+        LunarMsgHeader h;
+        if (!RecvAll(s, &h, sizeof(h))) break;
+        if (h.size > 16 * 1024 * 1024) break;
+        buf.resize(h.size);
+        if (h.size && !RecvAll(s, buf.data(), (int)h.size)) break;
+        if (m_cb.onMessage) m_cb.onMessage(h.type, buf.data(), h.size);
+    }
+    SOCKET expected = s;
+    if (m_client.compare_exchange_strong(expected, INVALID_SOCKET)) closesocket(s);
+    Log("Headset disconnected");
+    if (m_cb.onDisconnected) m_cb.onDisconnected();
+}
+
+void Net::PunchUdp() {
+    if (!Connected()) return;
+    LunarPacketHeader h;
+    lunarInitPacket(h, LPKT_HELLO);
+    std::lock_guard<std::mutex> lk(m_udpLock);
+    SendUdp(&h, sizeof(h));
+}
+
+// IPv4 addresses worth trying on the local network(s): the /24 around each of this PC's addresses.
+static std::vector<uint32_t> LocalCandidates() {
+    std::vector<uint32_t> out;
+    ULONG size = 32 * 1024;
+    std::vector<uint8_t> buf(size);
+    auto *aa = (IP_ADAPTER_ADDRESSES *)buf.data();
+    if (GetAdaptersAddresses(AF_INET, GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER, nullptr, aa, &size) != NO_ERROR) return out;
+    for (auto *a = aa; a; a = a->Next) {
+        if (a->OperStatus != IfOperStatusUp || a->IfType == IF_TYPE_SOFTWARE_LOOPBACK) continue;
+        for (auto *u = a->FirstUnicastAddress; u; u = u->Next) {
+            auto *sin = (sockaddr_in *)u->Address.lpSockaddr;
+            uint32_t ip = ntohl(sin->sin_addr.s_addr);
+            if ((ip >> 24) == 127 || (ip >> 16) == 0xA9FE) continue;  // loopback, link-local
+            uint32_t base = ip & 0xFFFFFF00u;
+            for (uint32_t h = 1; h < 255; h++) {
+                uint32_t c = base | h;
+                if (c != ip) out.push_back(c);
+            }
+            if (out.size() > 1500) return out;
         }
-        SOCKET expected = s;
-        if (m_client.compare_exchange_strong(expected, INVALID_SOCKET)) closesocket(s);
-        Log("Headset disconnected");
-        if (m_cb.onDisconnected) m_cb.onDisconnected();
+    }
+    return out;
+}
+
+// Tries to open the control connection from the PC to the headset (which listens on LUNAR_PORT_REVERSE).
+// Outgoing connections pass Windows Firewall even when incoming ones are blocked and the user isn't an admin.
+void Net::ReverseLoop() {
+    int64_t lastSweep = 0;
+    while (m_run) {
+        if (Connected()) {
+            Sleep(500);
+            continue;
+        }
+        std::vector<uint32_t> targets;
+        {
+            std::lock_guard<std::mutex> lk(m_revLock);
+            for (auto &ip : {m_manualHeadsetIp, m_lastHeadsetIp}) {
+                in_addr a;
+                if (!ip.empty() && inet_pton(AF_INET, ip.c_str(), &a) == 1) targets.push_back(ntohl(a.s_addr));
+            }
+        }
+        int64_t now = lunarNowUs();
+        if (now - lastSweep > 4000000) {
+            lastSweep = now;
+            auto c = LocalCandidates();
+            targets.insert(targets.end(), c.begin(), c.end());
+        }
+        if (targets.empty()) {
+            Sleep(1000);
+            continue;
+        }
+        // Non-blocking connects to every target at once, keep the first that answers.
+        std::vector<SOCKET> socks;
+        std::vector<WSAPOLLFD> fds;
+        for (uint32_t ip : targets) {
+            SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+            if (s == INVALID_SOCKET) break;
+            u_long nb = 1;
+            ioctlsocket(s, FIONBIO, &nb);
+            sockaddr_in a = {};
+            a.sin_family = AF_INET;
+            a.sin_port = htons(LUNAR_PORT_REVERSE);
+            a.sin_addr.s_addr = htonl(ip);
+            connect(s, (sockaddr *)&a, sizeof(a));
+            socks.push_back(s);
+            fds.push_back({s, POLLWRNORM, 0});
+        }
+        SOCKET winner = INVALID_SOCKET;
+        sockaddr_in winAddr = {};
+        int64_t deadline = lunarNowUs() + 1500000;
+        while (winner == INVALID_SOCKET && lunarNowUs() < deadline && m_run && !Connected()) {
+            int r = WSAPoll(fds.data(), (ULONG)fds.size(), 200);
+            if (r <= 0) continue;
+            for (size_t i = 0; i < fds.size(); i++) {
+                if (fds[i].fd == INVALID_SOCKET) continue;
+                if (fds[i].revents & (POLLERR | POLLHUP)) {
+                    closesocket(socks[i]);
+                    socks[i] = INVALID_SOCKET;
+                    fds[i].fd = INVALID_SOCKET;
+                    continue;
+                }
+                if (fds[i].revents & POLLWRNORM) {
+                    int err = 0, el = sizeof(err);
+                    getsockopt(socks[i], SOL_SOCKET, SO_ERROR, (char *)&err, &el);
+                    if (err == 0) {
+                        winner = socks[i];
+                        winAddr.sin_family = AF_INET;
+                        winAddr.sin_addr.s_addr = htonl(targets[i]);
+                        socks[i] = INVALID_SOCKET;
+                        break;
+                    }
+                }
+            }
+        }
+        for (SOCKET s : socks)
+            if (s != INVALID_SOCKET) closesocket(s);
+        if (winner != INVALID_SOCKET) {
+            u_long nb = 0;
+            ioctlsocket(winner, FIONBIO, &nb);
+            RunSession(winner, winAddr, true);
+        } else {
+            Sleep(1500);
+        }
     }
 }
 

@@ -40,10 +40,14 @@ public:
     uint64_t BytesSent() const { return m_bytesSent; }
     void SetHostName(const std::string &n) { m_hostName = n; }
     void SetSteamVrReady(bool r) { m_steamvrReady = r; }
+    void SetManualHeadsetIp(const std::string &ip) { std::lock_guard<std::mutex> lk(m_revLock); m_manualHeadsetIp = ip; }
 
 private:
     void DiscoveryLoop();
     void AcceptLoop();
+    void ReverseLoop();
+    void RunSession(SOCKET s, const sockaddr_in &from, bool reverse);
+    void PunchUdp();
     void UdpLoop();
     bool RecvAll(SOCKET s, void *buf, int len);
     void SendUdp(const void *data, int len);
@@ -55,7 +59,9 @@ private:
     sockaddr_in m_clientAddr = {};
     std::atomic<uint16_t> m_clientUdpPort{LUNAR_PORT_CLIENT};
     std::mutex m_sendLock, m_udpLock;
-    std::thread m_discThread, m_acceptThread, m_udpThread;
+    std::thread m_discThread, m_acceptThread, m_udpThread, m_revThread;
+    std::mutex m_revLock;
+    std::string m_manualHeadsetIp, m_lastHeadsetIp;
     std::atomic<uint64_t> m_bytesSent{0};
     std::string m_hostName;
     std::atomic<bool> m_steamvrReady{false};

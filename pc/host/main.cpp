@@ -155,7 +155,9 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR cmdLine, int) {
     std::thread([] {
         CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
         bool ok = FirewallRuleExists();
-        if (!ok) {
+        if (!ok && !g_settings.Get().firewallAsked) {
+            // Ask once. Without admin rights the PC dials out to the headset instead, so this is optional.
+            g_settings.Apply(nlohmann::json{{"firewallAsked", true}});
             Log("No firewall rule for Lunar Desktop yet, asking Windows to add one");
             ok = FixFirewall();
         }

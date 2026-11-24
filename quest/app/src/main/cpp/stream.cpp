@@ -33,6 +33,13 @@ void StreamClient::start(const Callbacks &cb) {
     int tos = 0xB8;
     setsockopt(m_mediaSock, IPPROTO_IP, IP_TOS, &tos, sizeof(tos));
 
+    // The PC can also dial in to us (works when its firewall blocks incoming connections).
+    m_revListen = socket(AF_INET, SOCK_STREAM, 0);
+    setsockopt(m_revListen, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+    a.sin_port = htons(LUNAR_PORT_REVERSE);
+    if (bind(m_revListen, (sockaddr *)&a, sizeof(a)) != 0 || listen(m_revListen, 4) != 0) LOGW("reverse listen failed");
+    m_revThread = std::thread([this] { reverseLoop(); });
+
     m_discThread = std::thread([this] { discoveryLoop(); });
     m_mediaThread = std::thread([this] { mediaLoop(); });
 }
@@ -42,6 +49,8 @@ void StreamClient::stop() {
     disconnect();
     if (m_discThread.joinable()) m_discThread.join();
     if (m_mediaThread.joinable()) m_mediaThread.join();
+    if (m_revThread.joinable()) m_revThread.join();
+    close(m_revListen);
     close(m_discSock);
     close(m_mediaSock);
 }
@@ -120,6 +129,8 @@ void StreamClient::connect(const std::string &ip) {
         m_hostName = ip;
         for (auto &h : hosts())
             if (h.ip == ip) m_hostName = h.name;
+        m_wantIp = ip;
+        m_wantName = m_hostName;
         m_stateText = "Connecting to " + m_hostName + (m_hostName != ip ? " (" + ip + ")" : "") + "…";
     }
     m_state = CONNECTING;
@@ -135,6 +146,49 @@ void StreamClient::disconnect() {
     if (m_ctrlThread.joinable()) m_ctrlThread.join();
     m_haveHostMedia = false;
     m_state = IDLE;
+}
+
+void StreamClient::cancel() {
+    {
+        std::lock_guard<std::mutex> lk(m_stateLock);
+        m_wantIp.clear();
+        m_wantName.clear();
+    }
+    disconnect();
+}
+
+bool StreamClient::reverseAllowed(const std::string &peerIp) {
+    std::lock_guard<std::mutex> lk(m_stateLock);
+    if (m_wantIp.empty()) return false;
+    if (peerIp == m_wantIp) return true;
+    // same PC reached over a different adapter/address
+    if (!m_wantName.empty() && m_wantName != m_wantIp)
+        for (auto &h : hosts())
+            if (h.ip == peerIp && h.name == m_wantName) return true;
+    return false;
+}
+
+void StreamClient::reverseLoop() {
+    while (m_run) {
+        pollfd pfd = {m_revListen, POLLIN, 0};
+        if (poll(&pfd, 1, 500) <= 0) continue;
+        sockaddr_in peer = {};
+        socklen_t pl = sizeof(peer);
+        int s = accept(m_revListen, (sockaddr *)&peer, &pl);
+        if (s < 0) continue;
+        char ip[32];
+        inet_ntop(AF_INET, &peer.sin_addr, ip, sizeof(ip));
+        if (m_ctrlSock >= 0 || m_state == CONNECTED || m_state == WAITING_APPROVAL || !reverseAllowed(ip)) {
+            close(s);  // not the PC we're trying to reach (or already connected)
+            continue;
+        }
+        LOGI("PC %s dialed in", ip);
+        {
+            std::lock_guard<std::mutex> lk(m_stateLock);
+            m_hostIp = ip;
+        }
+        runSession(s, peer);
+    }
 }
 
 static bool RecvAll(int s, void *buf, size_t len) {
@@ -163,16 +217,33 @@ void StreamClient::controlLoop(std::string ip) {
     if (poll(&pfd, 1, 4000) == 1) getsockopt(s, SOL_SOCKET, SO_ERROR, &err, &el);
     if (err != 0) {
         close(s);
+        if (m_ctrlSock >= 0 || m_state == CONNECTED || m_state == WAITING_APPROVAL) return;  // the PC dialed in meanwhile
         std::lock_guard<std::mutex> lk(m_stateLock);
         m_stateText = "Couldn't reach " + m_hostName + " at " + ip + ".";
         m_state = FAILED;
         return;
     }
     fcntl(s, F_SETFL, flags);
+    if (m_ctrlSock >= 0) {
+        close(s);
+        return;
+    }
+    runSession(s, a);
+}
+
+void StreamClient::runSession(int s, const sockaddr_in &a) {
+    int expectedNone = -1;
+    if (!m_ctrlSock.compare_exchange_strong(expectedNone, s)) {
+        close(s);
+        return;
+    }
     int yes = 1;
     setsockopt(s, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(yes));
     setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, &yes, sizeof(yes));
-    m_ctrlSock = s;
+    m_state = CONNECTING;
+    char peerIp[32];
+    inet_ntop(AF_INET, &a.sin_addr, peerIp, sizeof(peerIp));
+    std::string ip = peerIp;
 
     m_hostMedia = {};
     m_hostMedia.sin_family = AF_INET;

@@ -35,7 +35,7 @@ add_executable(LunarDesktop WIN32
   host/main.cpp host/app.cpp host/net.cpp host/encoder.cpp host/capture.cpp host/audio.cpp
   host/input.cpp host/steamvr.cpp host/settings.cpp host/ui_server.cpp host/log.cpp host/host.rc)
 target_include_directories(LunarDesktop PRIVATE third_party/openvr host)
-target_link_libraries(LunarDesktop PRIVATE d3d11 dxgi mfplat mfuuid mf ole32 oleaut32 uuid ws2_32 winmm shell32 user32 advapi32 strmiids)
+target_link_libraries(LunarDesktop PRIVATE d3d11 dxgi mfplat mfuuid mf ole32 oleaut32 uuid ws2_32 iphlpapi winmm shell32 user32 advapi32 strmiids)
 set_target_properties(LunarDesktop PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR}
   RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUT_DIR})

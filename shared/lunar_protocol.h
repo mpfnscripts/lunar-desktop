@@ -12,6 +12,7 @@
 #define LUNAR_PORT_STREAM    47812  // UDP: host media socket (tracking/mic arrive here)
 #define LUNAR_PORT_CLIENT    47813  // UDP: client media socket (video/audio arrive here)
 #define LUNAR_PORT_UI        47800  // HTTP: host settings window (127.0.0.1 only)
+#define LUNAR_PORT_REVERSE   47814  // TCP: headset listens; the PC connects out (works when the PC firewall blocks incoming)
 
 #define LUNAR_MAGIC 0x524E554Cu  // "LUNR"
 #define LUNAR_MAX_UDP_PAYLOAD 1400

@@ -36,6 +36,8 @@ struct HostSettings {
     // App
     bool openWindowOnStart = true;
     bool startWithWindows = false;
+    bool firewallAsked = false;
+    std::string headsetIp;      // optional: the PC dials the headset directly at this address
     std::vector<TrustedDevice> trusted;
 };
 

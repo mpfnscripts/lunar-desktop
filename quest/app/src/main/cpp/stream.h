@@ -41,6 +41,7 @@ public:
     std::vector<HostInfo> hosts();
     void connect(const std::string &ip);
     void disconnect();
+    void cancel();  // user gave up: stop accepting the PC dialing in, and disconnect
     State state() const { return m_state; }
     std::string stateText();
     std::string hostName();
@@ -65,6 +66,9 @@ public:
 private:
     void discoveryLoop();
     void controlLoop(std::string ip);
+    void reverseLoop();
+    void runSession(int s, const sockaddr_in &peer);
+    bool reverseAllowed(const std::string &peerIp);
     void mediaLoop();
     void onVideoChunk(const LunarVideoChunk *c, const uint8_t *payload, size_t n);
     void deliverFrame(size_t slot);
@@ -73,7 +77,9 @@ private:
     std::atomic<bool> m_run{false};
     int m_discSock = -1, m_mediaSock = -1;
     std::atomic<int> m_ctrlSock{-1};
-    std::thread m_discThread, m_mediaThread, m_ctrlThread;
+    std::thread m_discThread, m_mediaThread, m_ctrlThread, m_revThread;
+    int m_revListen = -1;
+    std::string m_wantIp, m_wantName;  // the PC the user picked (guarded by m_stateLock)
     std::mutex m_hostsLock, m_sendLock, m_stateLock;
     std::vector<HostInfo> m_hosts;
     std::atomic<State> m_state{IDLE};
