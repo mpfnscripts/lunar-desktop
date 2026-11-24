@@ -4,6 +4,25 @@
 #include <fstream>
 #include <sstream>
 #include "platform.h"
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+
+// This headset's Wi-Fi IPv4 address (for typing into the PC app).
+static std::string LocalIp() {
+    std::string best = "?";
+    ifaddrs *ifs = nullptr;
+    if (getifaddrs(&ifs) != 0) return best;
+    for (ifaddrs *i = ifs; i; i = i->ifa_next) {
+        if (!i->ifa_addr || i->ifa_addr->sa_family != AF_INET || (i->ifa_flags & IFF_LOOPBACK)) continue;
+        char buf[32];
+        inet_ntop(AF_INET, &((sockaddr_in *)i->ifa_addr)->sin_addr, buf, sizeof(buf));
+        best = buf;
+        if (strncmp(i->ifa_name, "wlan", 4) == 0) break;
+    }
+    freeifaddrs(ifs);
+    return best;
+}
 
 static const char *kVersion = "1.0.0";
 
@@ -693,15 +712,18 @@ void App::drawConnectUi(Panel &p) {
         ui.text(x, 256, tries, 20, t.inkFaint, FONT_REGULAR);
         Rect box(x, 290, w, 300);
         ui.rect(box, 26, Color(5 / 255.f, 8 / 255.f, 22 / 255.f, 0.4f), Color(5 / 255.f, 8 / 255.f, 22 / 255.f, 0.4f), Color(1.f, 217 / 255.f, 168 / 255.f, 0.45f), 1.5f);
-        const char *steps[] = {"Windows Firewall is probably blocking Lunar Desktop.",
-                               "1. On the PC, open the Lunar Desktop window.",
-                               "2. Click \"Fix firewall\" and choose Yes.",
-                               "3. Still stuck? Close Lunar Desktop from the tray",
-                               "    and start it again, then click Yes when asked.",
-                               "Both devices must be on the same network (no guest Wi-Fi)."};
+        std::string myIp = "this headset's IP: " + LocalIp();
+        std::string l5 = "  Devices \xE2\x86\x92 Headset IP address: " + LocalIp();
+        const char *steps[] = {"The PC's firewall is blocking the headset. That's OK:",
+                               "Lunar Desktop on the PC is now dialing out to this headset",
+                               "instead (no admin needed). Keep this screen open ~10 s.",
+                               "Still stuck? In the Lunar Desktop window on the PC, type",
+                               l5.c_str(),
+                               "Same network for both (not a guest Wi-Fi)."};
         for (int i = 0; i < 6; i++)
-            ui.text(box.x + 28, box.y + 40 + i * 44.f, steps[i], i == 0 ? 23.f : 21.f, i == 0 ? t.ink : t.inkSoft, i == 0 ? FONT_SEMIBOLD : FONT_REGULAR,
-                    ALIGN_LEFT, 0, Color(0, 0, 0, 0), box.w - 56);
+            ui.text(box.x + 28, box.y + 40 + i * 44.f, steps[i], i == 0 || i == 4 ? 23.f : 21.f, i == 0 || i == 4 ? t.ink : t.inkSoft,
+                    i == 0 || i == 4 ? FONT_SEMIBOLD : FONT_REGULAR, ALIGN_LEFT, 0, Color(0, 0, 0, 0), box.w - 56);
+        (void)myIp;
         if (ui.button(12, Rect(x, 620, 220, 64), "Stop trying")) {
             m_prefs.autoConnect = false;
             m_connectFails = 0;
