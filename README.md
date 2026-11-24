@@ -123,6 +123,7 @@ assets/          Lunar logo, textures, icons, fonts and themes (from the Lunar M
 
 | Problem | Fix |
 |---|---|
+| Headset stuck on "Connecting to <your PC>" | Windows Firewall is blocking the connection. In the Lunar Desktop window on the PC, click **Fix firewall** and choose **Yes**. Lunar Desktop also offers this automatically when it starts. If you ever clicked *Cancel* on Windows' firewall popup, this fix removes the block rule Windows created. |
 | Headset says "Searching…" forever | Make sure `LunarDesktop.exe` is running and both devices are on the same network. Allow it through the firewall (Devices tab), or use **Enter IP address** on the headset. The PC's IP is shown by `ipconfig`. |
 | Headset stuck on "Allow this headset" | Click **Allow** in the Lunar Desktop window on the PC (the tray balloon opens it). |
 | SteamVR says "Headset not detected" | Close SteamVR, click **Register** in the SteamVR tab, and start SteamVR again. Make sure the Quest is connected first. |

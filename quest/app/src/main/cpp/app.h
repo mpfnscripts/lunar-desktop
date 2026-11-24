@@ -151,5 +151,7 @@ private:
     uint32_t m_fpsFrames = 0;
     bool m_micAsked = false;
     bool m_audioOn = false;
+    int m_connectFails = 0;
+    StreamClient::State m_prevNetState = StreamClient::IDLE;
     int m_battery = -1;
 };

@@ -225,6 +225,11 @@ body.clunk .sw-theme.on{border-style:inset;box-shadow:none}
         <button class="pill primary" data-act="allow">Allow</button>
         <button class="pill danger" data-act="deny">Deny</button>
       </div>
+      <div class="pending hidden" id="fwWarn">
+        <b>Windows Firewall is blocking your headset</b>
+        <p>This is why the Quest gets stuck on "Connecting". Click Fix and choose Yes when Windows asks.</p>
+        <button class="pill primary" data-act="firewall">Fix firewall</button>
+      </div>
       <div class="stats" id="stats">
         <div class="stat"><b id="sFps">–</b><span>FPS</span></div>
         <div class="stat"><b id="sMbps">–</b><span>Mbps</span></div>
@@ -396,7 +401,7 @@ async function save(obj){
 async function act(action,extra={}){
   try{
     const r=await(await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json','X-Lunar':'1'},body:JSON.stringify({action,...extra})})).json();
-    if(!r.ok&&r.error)toast(r.error);else if(action==='allow')toast('Headset allowed');
+    if(!r.ok&&r.error)toast(r.error);else if(action==='allow')toast('Headset allowed');else if(action==='firewall')toast('Firewall fixed. Try connecting again from the headset.');
     poll();
   }catch(e){toast('Lunar Desktop is not running');}
 }
@@ -436,6 +441,7 @@ function render(){
   const f=(v,d=0)=>live&&v?Number(v).toFixed(d):'–';
   $('#sFps').textContent=f(S.fps);$('#sMbps').textContent=f(S.mbps);$('#sEnc').textContent=f(S.encodeMs,1);
   $('#sDec').textContent=f(S.client.decodeMs,1);$('#sLoss').textContent=live?Number(S.client.loss||0).toFixed(1):'–';$('#sLat').textContent=f(S.client.networkMs,0);
+  $('#fwWarn').classList.toggle('hidden',S.firewall!==0);
   $('#discBtn').disabled=!S.connected;
   const sv=S.steamvr;const vb=$('#vrBtn');vb.textContent=sv.running?'Stop SteamVR':'Launch SteamVR';vb.dataset.act=sv.running?'stop_steamvr':'launch_steamvr';
   const chk=(id,ok)=>{const e=$(id);e.className=ok?'ok':'no';e.textContent=ok?'✓':'!';};

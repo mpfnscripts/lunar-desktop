@@ -194,6 +194,9 @@ void App::updateConnection() {
     double now = NowSec();
     StreamClient::State st = m_net.state();
     bool connected = st == StreamClient::CONNECTED;
+    if (st == StreamClient::FAILED && m_prevNetState != StreamClient::FAILED) m_connectFails++;
+    if (st == StreamClient::CONNECTED || st == StreamClient::WAITING_APPROVAL) m_connectFails = 0;
+    m_prevNetState = st;
 
     if (!connected && m_haveCfg) {
         m_haveCfg = false;
@@ -677,6 +680,39 @@ void App::drawConnectUi(Panel &p) {
         if (ui.button(10, Rect(x, 400, 220, 64), "Cancel")) {
             m_prefs.autoConnect = false;
             m_net.disconnect();
+        }
+        return;
+    }
+    bool blocked = m_connectFails > 0 && (st == StreamClient::CONNECTING || st == StreamClient::FAILED) && m_prefs.autoConnect;
+    if (blocked) {
+        // The PC answers discovery but won't accept the connection: almost always Windows Firewall.
+        char tries[64];
+        snprintf(tries, sizeof(tries), "Tried %d time%s, still trying\xE2\x80\xA6", m_connectFails, m_connectFails == 1 ? "" : "s");
+        ui.text(x, 170, "Can't get through to your PC", 40, t.ink, FONT_SEMIBOLD, ALIGN_LEFT, 0.01f, t.accent.withA(0.45f), w);
+        ui.text(x, 222, (m_net.hostName() + "  \xC2\xB7  " + m_prefs.lastHost).c_str(), 22, t.inkSoft, FONT_REGULAR, ALIGN_LEFT, 0, Color(0, 0, 0, 0), w);
+        ui.text(x, 256, tries, 20, t.inkFaint, FONT_REGULAR);
+        Rect box(x, 290, w, 300);
+        ui.rect(box, 26, Color(5 / 255.f, 8 / 255.f, 22 / 255.f, 0.4f), Color(5 / 255.f, 8 / 255.f, 22 / 255.f, 0.4f), Color(1.f, 217 / 255.f, 168 / 255.f, 0.45f), 1.5f);
+        const char *steps[] = {"Windows Firewall is probably blocking Lunar Desktop.",
+                               "1. On the PC, open the Lunar Desktop window.",
+                               "2. Click \"Fix firewall\" and choose Yes.",
+                               "3. Still stuck? Close Lunar Desktop from the tray",
+                               "    and start it again, then click Yes when asked.",
+                               "Both devices must be on the same network (no guest Wi-Fi)."};
+        for (int i = 0; i < 6; i++)
+            ui.text(box.x + 28, box.y + 40 + i * 44.f, steps[i], i == 0 ? 23.f : 21.f, i == 0 ? t.ink : t.inkSoft, i == 0 ? FONT_SEMIBOLD : FONT_REGULAR,
+                    ALIGN_LEFT, 0, Color(0, 0, 0, 0), box.w - 56);
+        if (ui.button(12, Rect(x, 620, 220, 64), "Stop trying")) {
+            m_prefs.autoConnect = false;
+            m_connectFails = 0;
+            m_net.disconnect();
+        }
+        if (ui.button(13, Rect(x + 240, 620, 300, 64), "Enter IP address", false, false, ICON_WIFI)) {
+            m_prefs.autoConnect = false;
+            m_connectFails = 0;
+            m_net.disconnect();
+            m_manualEntry = true;
+            m_manualIp.clear();
         }
         return;
     }

@@ -87,3 +87,6 @@ private:
 };
 
 extern App g_app;
+bool FirewallRuleExists();
+bool FixFirewall();
+extern std::atomic<int> g_firewallOk;  // -1 unknown, 0 missing, 1 ok

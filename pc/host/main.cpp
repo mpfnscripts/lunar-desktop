@@ -4,6 +4,7 @@
 #include <mfapi.h>
 #include <shellapi.h>
 #include <string>
+#include <thread>
 #include "app.h"
 #include "log.h"
 #include "resource.h"
@@ -150,6 +151,16 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR cmdLine, int) {
         return 1;
     }
     UiServerStart();
+    // Make sure Windows Firewall lets the headset in (this is the usual reason it can't connect).
+    std::thread([] {
+        CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+        bool ok = FirewallRuleExists();
+        if (!ok) {
+            Log("No firewall rule for Lunar Desktop yet, asking Windows to add one");
+            ok = FixFirewall();
+        }
+        g_firewallOk = ok ? 1 : 0;
+    }).detach();
     if (!background && g_settings.Get().openWindowOnStart) OpenUiWindow();
     Notify("Lunar Desktop is running", "Put on your Quest and open Lunar Desktop to connect.");
 

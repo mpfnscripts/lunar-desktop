@@ -11,6 +11,56 @@
 
 using nlohmann::json;
 App g_app;
+std::atomic<int> g_firewallOk{-1};
+
+static bool RunHiddenWait(const std::wstring &cmdline, DWORD *exitCode) {
+    std::wstring cmd = cmdline;
+    STARTUPINFOW si = {sizeof(si)};
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE;
+    PROCESS_INFORMATION pi = {};
+    if (!CreateProcessW(nullptr, &cmd[0], nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi)) return false;
+    WaitForSingleObject(pi.hProcess, 10000);
+    GetExitCodeProcess(pi.hProcess, exitCode);
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+    return true;
+}
+
+// True if our inbound allow rule exists (netsh returns 0 when a rule matches).
+bool FirewallRuleExists() {
+    DWORD code = 1;
+    if (!RunHiddenWait(L"netsh.exe advfirewall firewall show rule name=\"Lunar Desktop\"", &code)) return true;  // can't tell: don't nag
+    return code == 0;
+}
+
+// Removes any rules Windows made for this exe (including "Block" rules created when its
+// firewall popup was cancelled) and adds one allow rule for every network type.
+// Asks for admin rights through the normal Windows prompt.
+bool FixFirewall() {
+    wchar_t exe[MAX_PATH];
+    GetModuleFileNameW(nullptr, exe, MAX_PATH);
+    std::wstring e = exe;
+    std::wstring args = L"/c netsh advfirewall firewall delete rule name=all program=\"" + e +
+                        L"\" & netsh advfirewall firewall add rule name=\"Lunar Desktop\" dir=in action=allow enable=yes profile=any program=\"" + e + L"\"";
+    SHELLEXECUTEINFOW sei = {sizeof(sei)};
+    sei.fMask = SEE_MASK_NOCLOSEPROCESS;
+    sei.lpVerb = L"runas";
+    sei.lpFile = L"cmd.exe";
+    sei.lpParameters = args.c_str();
+    sei.nShow = SW_HIDE;
+    if (!ShellExecuteExW(&sei)) {
+        Log("Firewall fix declined");
+        return false;
+    }
+    if (sei.hProcess) {
+        WaitForSingleObject(sei.hProcess, 15000);
+        CloseHandle(sei.hProcess);
+    }
+    bool ok = FirewallRuleExists();
+    Log("Firewall rule %s", ok ? "added" : "still missing");
+    return ok;
+}
 
 static const char *kVersion = "1.0.0";
 
@@ -742,6 +792,7 @@ json App::StateJson() {
     j["monitors"] = mons;
     j["playbackDevices"] = ListPlaybackDevices();
     j["settings"] = g_settings.ToJson();
+    j["firewall"] = g_firewallOk.load();
     j["log"] = LogTail(60);
     return j;
 }
@@ -810,12 +861,9 @@ std::string App::Action(const std::string &name, const json &args) {
         return "";
     }
     if (name == "firewall") {
-        wchar_t exe[MAX_PATH];
-        GetModuleFileNameW(nullptr, exe, MAX_PATH);
-        std::wstring args = L"advfirewall firewall add rule name=\"Lunar Desktop\" dir=in action=allow enable=yes profile=private,domain program=\"" +
-                            std::wstring(exe) + L"\"";
-        if ((INT_PTR)ShellExecuteW(nullptr, L"runas", L"netsh.exe", args.c_str(), nullptr, SW_HIDE) <= 32) return "Windows did not allow the change.";
-        return "";
+        bool ok = FixFirewall();
+        g_firewallOk = ok ? 1 : 0;
+        return ok ? "" : "Windows did not allow the change.";
     }
     if (name == "openxr_settings") {
         steamvr::Launch();

@@ -120,7 +120,7 @@ void StreamClient::connect(const std::string &ip) {
         m_hostName = ip;
         for (auto &h : hosts())
             if (h.ip == ip) m_hostName = h.name;
-        m_stateText = "Connecting to " + m_hostName + "…";
+        m_stateText = "Connecting to " + m_hostName + (m_hostName != ip ? " (" + ip + ")" : "") + "…";
     }
     m_state = CONNECTING;
     m_ctrlThread = std::thread([this, ip] { controlLoop(ip); });
@@ -164,7 +164,7 @@ void StreamClient::controlLoop(std::string ip) {
     if (err != 0) {
         close(s);
         std::lock_guard<std::mutex> lk(m_stateLock);
-        m_stateText = "Couldn't reach " + m_hostName + ". Is Lunar Desktop running on the PC?";
+        m_stateText = "Couldn't reach " + m_hostName + " at " + ip + ".";
         m_state = FAILED;
         return;
     }
